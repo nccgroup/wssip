@@ -1,0 +1,107 @@
+{
+  "name": "wssip",
+  "version": "1.0.2",
+  "description": "Intercepting Proxy Application to capture, modify and send custom data from one WebSocket host to another, primarily for penetration testing. Supports WebSocket RFC6455 implementations and Socket.io.",
+  "main": "lib/electron.js",
+  "bin": {
+    "wssip": "lib/cli.js"
+  },
+  "scripts": {
+    "start": "electron .",
+    "debug": "DEBUG=wssip:* electron .",
+    "debug:win": "set DEBUG=wssip:* && electron .",
+    "compile": "babel src/ -d public/",
+    "build": "npm run compile && electron-forge make",
+    "package": "npm run compile && electron-forge package",
+    "lint:src": "eslint src",
+    "lint:lib": "eslint lib"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nccgroup/wssip.git"
+  },
+  "bugs": {
+    "url": "https://github.com/nccgroup/wssip/issues"
+  },
+  "keywords": [
+    "ws",
+    "wssip",
+    "websocket",
+    "socketio",
+    "interceptor",
+    "proxy",
+    "mitm",
+    "http",
+    "https"
+  ],
+  "author": "Samantha Chalker <samantha@chalker.io>",
+  "license": "AGPL-3.0",
+  "dependencies": {
+    "bootstrap": "^3.3.7",
+    "conf": "^0.12.0",
+    "debug": "^2.6.4",
+    "electron": "^1.6.7",
+    "electron-compile": "^6.4.0",
+    "electron-window-state": "^4.1.1",
+    "hexy": "^0.2.9",
+    "material-ui": "^0.17.4",
+    "node-forge": "^0.7.1",
+    "node-libcurl": "^1.1.0",
+    "react": "^15.5.3",
+    "react-autobind": "^1.0.6",
+    "react-data-grid": "^2.0.31",
+    "react-dom": "^15.5.3",
+    "react-tap-event-plugin": "^2.0.1",
+    "ws": "^2.3.1"
+  },
+  "devDependencies": {
+    "babel-cli": "^6.24.1",
+    "babel-plugin-array-includes": "^2.0.3",
+    "babel-plugin-transform-async-to-generator": "^6.24.1",
+    "babel-preset-es2016-node5": "^1.1.2",
+    "babel-preset-react": "^6.24.1",
+    "debug": "^2.6.3",
+    "electron-prebuilt-compile": "^1.6.7",
+    "electron-react-devtools": "^0.4.0",
+    "eslint": "^3.19.0",
+    "eslint-config-airbnb": "^14.1.0",
+    "eslint-plugin-import": "^2.2.0",
+    "eslint-plugin-jsx-a11y": "^4.0.0",
+    "eslint-plugin-react": "^6.10.3",
+    "react-scripts": "^0.9.5"
+  },
+  "engines": {
+    "node": ">=7.0.0"
+  },
+  "config": {
+    "forge": {
+      "make_targets": {
+        "win32": [
+          "squirrel",
+          "zip"
+        ],
+        "darwin": [
+          "dmg"
+        ],
+        "linux": [
+          "deb",
+          "rpm"
+        ]
+      },
+      "electronPackagerConfig": {},
+      "electronWinstallerConfig": {
+        "name": "wssip"
+      },
+      "electronInstallerDebian": {},
+      "electronInstallerRedhat": {},
+      "github_repository": {
+        "owner": "",
+        "name": ""
+      },
+      "windowsStoreConfig": {
+        "packageName": "",
+        "name": "wssip"
+      }
+    }
+  }
+}
