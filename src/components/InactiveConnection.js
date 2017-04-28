@@ -1,4 +1,3 @@
-import {ipcRenderer} from 'electron';
 import React from 'react';
 import autoBind from 'react-autobind';
 import ReactDataGrid from 'react-data-grid';
@@ -17,19 +16,19 @@ export default class InactiveConnection extends React.Component {
   }
 
   onRowsSelected(rows) {
-    ipcRenderer.send('debug', 'InactiveConnection', `onRowsSelected: rows = ${rows}`);
+    this.props.ipcRenderer.send('debug', 'InactiveConnection', `onRowsSelected: rows = ${rows}`);
 
     let newSelected = this.state.selected.concat(rows.map(r => r.rowIdx));
 
     this.setState({ selected: newSelected }, () => {
       this.props.onSelectConnection(newSelected[0]);
-      ipcRenderer.send('debug', 'InactiveConnection', `onRowsSelected: state.selected = ${JSON.stringify(newSelected)}`);
+      this.props.ipcRenderer.send('debug', 'InactiveConnection', `onRowsSelected: state.selected = ${JSON.stringify(newSelected)}`);
     });
   }
 
   onRowClick(rowId, row) {
-    ipcRenderer.send('debug', 'InactiveConnection', `onRowClick: rowId = ${rowId}`);
-    ipcRenderer.send('debug', 'InactiveConnection', `onRowClick: row = ${JSON.stringify(row)}`);
+    this.props.ipcRenderer.send('debug', 'InactiveConnection', `onRowClick: rowId = ${rowId}`);
+    this.props.ipcRenderer.send('debug', 'InactiveConnection', `onRowClick: row = ${JSON.stringify(row)}`);
 
     if(rowId === -1)
       return this.setState({
@@ -46,25 +45,25 @@ export default class InactiveConnection extends React.Component {
     }
 
     this.setState({ selected: selectedState }, () => {
-      ipcRenderer.send('debug', 'InactiveConnection', `onRowClick: state.selected = ${JSON.stringify(selectedState)}`);
+      this.props.ipcRenderer.send('debug', 'InactiveConnection', `onRowClick: state.selected = ${JSON.stringify(selectedState)}`);
 
       let ids = [];
       this.state.selected.forEach(rowId => ids.push(this.props.list[rowId].id));
 
-      ipcRenderer.send('debug', 'InactiveConnection', `onRowClick: sending id array ${JSON.stringify(ids)}`);
+      this.props.ipcRenderer.send('debug', 'InactiveConnection', `onRowClick: sending id array ${JSON.stringify(ids)}`);
       this.props.onSelectConnection(ids);
     });
   }
 
   onRowsDeselected(rows) {
-    ipcRenderer.send('debug', 'InactiveConnection', `onRowsDeselected: rows = ${rows}`);
+    this.props.ipcRenderer.send('debug', 'InactiveConnection', `onRowsDeselected: rows = ${rows}`);
 
     const rowIndices = rows.map(r => r.rowIdx);
     const newSelected = this.state.selected.filter(i => rowIndices.indexOf(i) === -1);
 
     this.setState({ selected: newSelected }, () => {
       this.props.onSelectConnection(newSelected);
-      ipcRenderer.send('debug', 'InactiveConnection', `onRowsDeselected: state.selected = ${JSON.stringify(newSelected)}`);
+      this.props.ipcRenderer.send('debug', 'InactiveConnection', `onRowsDeselected: state.selected = ${JSON.stringify(newSelected)}`);
     });
   }
 

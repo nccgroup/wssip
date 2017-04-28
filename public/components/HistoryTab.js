@@ -12,7 +12,7 @@ var _reactAutobind = require('react-autobind');
 
 var _reactAutobind2 = _interopRequireDefault(_reactAutobind);
 
-var _hexy = require('../../node_modules/hexy/hexy');
+var _hexy = require('hexy');
 
 var _Checkbox = require('material-ui/Checkbox');
 
@@ -111,14 +111,8 @@ class HistoryTab extends _react2.default.Component {
 
     let msgHistory = Object.assign({}, this.props.messageHistory[this.props.id]);
 
-    var _state = this.state;
-    const sortDirection = _state.sortDirection,
-          sortColumn = _state.sortColumn,
-          messageValue = _state.messageValue;
-    var _props = this.props;
-    const clientWidth = _props.clientWidth,
-          clientHeight = _props.clientHeight;
-
+    const { sortDirection, sortColumn, messageValue } = this.state;
+    const { clientWidth, clientHeight } = this.props;
 
     if (sortDirection !== 'NONE') {
       msgHistory = msgHistory.sort((a, b) => {

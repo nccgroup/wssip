@@ -4,8 +4,6 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 
-var _electron = require('electron');
-
 var _react = require('react');
 
 var _react2 = _interopRequireDefault(_react);
@@ -35,19 +33,19 @@ class ActiveConnection extends _react2.default.Component {
   }
 
   onRowsSelected(rows) {
-    _electron.ipcRenderer.send('debug', 'ActiveConnection', `onRowsSelected: rows = ${rows}`);
+    this.props.ipcRenderer.send('debug', 'ActiveConnection', `onRowsSelected: rows = ${rows}`);
 
     let newSelected = this.state.selected.concat(rows.map(r => r.rowIdx));
 
     this.setState({ selected: newSelected }, () => {
       this.props.onSelectConnection(newSelected[0]);
-      _electron.ipcRenderer.send('debug', 'ActiveConnection', `onRowsSelected: state.selected = ${JSON.stringify(newSelected)}`);
+      this.props.ipcRenderer.send('debug', 'ActiveConnection', `onRowsSelected: state.selected = ${JSON.stringify(newSelected)}`);
     });
   }
 
   onRowClick(rowId, row) {
-    _electron.ipcRenderer.send('debug', 'ActiveConnection', `onRowClick: rowId = ${rowId}`);
-    _electron.ipcRenderer.send('debug', 'ActiveConnection', `onRowClick: row = ${JSON.stringify(row)}`);
+    this.props.ipcRenderer.send('debug', 'ActiveConnection', `onRowClick: rowId = ${rowId}`);
+    this.props.ipcRenderer.send('debug', 'ActiveConnection', `onRowClick: row = ${JSON.stringify(row)}`);
 
     if (rowId === -1) return this.setState({
       selected: [],
@@ -63,36 +61,32 @@ class ActiveConnection extends _react2.default.Component {
     }
 
     this.setState({ selected: selectedState }, () => {
-      _electron.ipcRenderer.send('debug', 'ActiveConnection', `onRowClick: state.selected = ${JSON.stringify(selectedState)}`);
+      this.props.ipcRenderer.send('debug', 'ActiveConnection', `onRowClick: state.selected = ${JSON.stringify(selectedState)}`);
 
       let ids = [];
       this.state.selected.forEach(rowId => ids.push(this.props.list[rowId].id));
 
-      _electron.ipcRenderer.send('debug', 'ActiveConnection', `onRowClick: sending id array ${JSON.stringify(ids)}`);
+      this.props.ipcRenderer.send('debug', 'ActiveConnection', `onRowClick: sending id array ${JSON.stringify(ids)}`);
       this.props.onSelectConnection(ids);
     });
   }
 
   onRowsDeselected(rows) {
-    _electron.ipcRenderer.send('debug', 'ActiveConnection', `onRowsDeselected: rows = ${rows}`);
+    this.props.ipcRenderer.send('debug', 'ActiveConnection', `onRowsDeselected: rows = ${rows}`);
 
     const rowIndices = rows.map(r => r.rowIdx);
     const newSelected = this.state.selected.filter(i => rowIndices.indexOf(i) === -1);
 
     this.setState({ selected: newSelected }, () => {
       this.props.onSelectConnection(newSelected);
-      _electron.ipcRenderer.send('debug', 'ActiveConnection', `onRowsDeselected: state.selected = ${JSON.stringify(newSelected)}`);
+      this.props.ipcRenderer.send('debug', 'ActiveConnection', `onRowsDeselected: state.selected = ${JSON.stringify(newSelected)}`);
     });
   }
 
   render() {
-    let list = this.props.list;
-    const height = this.props.height;
-    var _state = this.state;
-    const sortDirection = _state.sortDirection,
-          sortColumn = _state.sortColumn,
-          selected = _state.selected;
-
+    let { list } = this.props;
+    const { height } = this.props;
+    const { sortDirection, sortColumn, selected } = this.state;
 
     if (sortDirection !== 'NONE') {
       list = list.sort((a, b) => {

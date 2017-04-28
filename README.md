@@ -66,7 +66,7 @@ This module is still under development.
 
 ## Development
 
-Pull requests are welcomed and encouraged. This application supports the `debug` npm package, and setting the environment variable `DEBUG=wssip:*` will output debug information to console.
+Pull requests are welcomed and encouraged. WSSiP supports the `debug` npm package, and setting the environment variable `DEBUG=wssip:*` will output debug information to console.
 
 Working on for v1.1.0:
 * Exposed API for external scripts for fuzzing (working on now, see above)
@@ -79,4 +79,4 @@ Working on for v???:
 
 ### node-libcurl
 
-WSSiP depends on `node-libcurl` to make requests due to odd behavior and will become optional in v1.1.0. See [JCMais/node-libcurl](https://github.com/JCMais/node-libcurl) ([npm](https://www.npmjs.com/package/node-libcurl)) for install instructions.
+WSSiP will use `http.request()` and `https.request()` to retrieve data from web servers as a part of the man-in-the-middle component, but if `node-libcurl` is installed via npm/yarn either globally or in the working directory of WSSiP, it will use that module instead. In testing, some web servers have unexpectedly terminated their connections while using the `.request()` function, but will not terminate using curl to fetch a web page. As a result, some users may opt to use curl instead.

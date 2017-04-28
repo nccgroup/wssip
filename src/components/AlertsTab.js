@@ -1,5 +1,4 @@
 import React from 'react';
-import autoBind from 'react-autobind';
 import ReactDataGrid from 'react-data-grid';
 
 import {AlertsColumns} from './_ReactStyle';
@@ -7,7 +6,6 @@ import {AlertsColumns} from './_ReactStyle';
 export default class AlertsTab extends React.Component {
   constructor(props) {
     super(props);
-    autoBind(this);
   }
 
   render() {
@@ -18,7 +16,7 @@ export default class AlertsTab extends React.Component {
         <ReactDataGrid
           columns={AlertsColumns}
           rowGetter={(i) => Object.assign({}, alerts[i])}
-          rowsCount={this.props.alerts.length}
+          rowsCount={alerts.length}
           minHeight={height}
         />
       </div>

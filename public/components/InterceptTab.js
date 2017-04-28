@@ -4,8 +4,6 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 
-var _electron = require('electron');
-
 var _react = require('react');
 
 var _react2 = _interopRequireDefault(_react);
@@ -63,18 +61,12 @@ class InterceptTab extends _react2.default.Component {
   }
 
   componentWillReceiveProps(nextProps) {
-    var _state = this.state;
-    const waiting = _state.waiting,
-          editing = _state.editing,
-          interceptionOn = _state.interceptionOn,
-          interceptValue = _state.interceptValue,
-          menu = _state.menu;
-
+    const { waiting, editing, interceptionOn, interceptValue, menu } = this.state;
 
     ['client', 'server'].forEach(sender => {
       if (nextProps.heldForIntercept[sender] !== false) {
         waiting[sender] = nextProps.heldForIntercept[sender].length > 0 ? `(${nextProps.heldForIntercept[sender].length} messages waiting)` : '';
-        _electron.ipcRenderer.send('debug', 'InterceptTab', `this.state.waiting[${sender}] = ${waiting[sender]}`);
+        nextProps.ipcRenderer.send('debug', 'InterceptTab', `this.state.waiting[${sender}] = ${waiting[sender]}`);
 
         if (interceptionOn[sender] && editing[sender] === false && nextProps.heldForIntercept[sender].length > 0) {
           editing[sender] = true;
@@ -99,13 +91,7 @@ class InterceptTab extends _react2.default.Component {
   }
 
   resetToDefault(sender) {
-    var _state2 = this.state;
-    const editing = _state2.editing,
-          isMasked = _state2.isMasked,
-          isBinary = _state2.isBinary,
-          interceptValue = _state2.interceptValue,
-          menu = _state2.menu;
-
+    const { editing, isMasked, isBinary, interceptValue, menu } = this.state;
 
     isMasked[sender] = false;
     isBinary[sender] = false;
@@ -124,10 +110,7 @@ class InterceptTab extends _react2.default.Component {
   }
 
   handleSendClick(sender) {
-    var _props = this.props;
-    const id = _props.id,
-          heldForIntercept = _props.heldForIntercept;
-
+    const { id, heldForIntercept } = this.props;
     const direction = sender === 'client' ? 'server' : 'client';
 
     this.props.onMessageSent(id, direction, this.state.menu[sender], this.state.interceptValue[sender], this.state.isBinary[sender], this.state.isMasked[sender], heldForIntercept[sender][0].data !== this.state.interceptValue[sender], true, false);
@@ -141,12 +124,10 @@ class InterceptTab extends _react2.default.Component {
   }
 
   onToggleInterceptState(sender, checked) {
-    const interceptionOn = this.state.interceptionOn;
-
+    const { interceptionOn } = this.state;
     interceptionOn[sender] = checked;
 
-    this.setState({ interceptionOn: interceptionOn });
-    this.props.onToggleInterceptState(this.props.id, sender, checked);
+    this.setState({ interceptionOn: interceptionOn }, () => this.props.onToggleInterceptState(this.props.id, sender, checked));
   }
 
   changeVal(sender, name, val) {

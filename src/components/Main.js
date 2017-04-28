@@ -1,4 +1,3 @@
-import {ipcRenderer} from 'electron';
 import React from 'react';
 import autoBind from 'react-autobind';
 
@@ -49,18 +48,18 @@ export default class Main extends React.Component {
       alertText: 'Default Alert Text'
     }
 
-    ipcRenderer.on('mitmengine-new-connection', this.addConnection);
-    ipcRenderer.on('mitmengine-data', this.handleMitmData);
-    ipcRenderer.on('mitmengine-close-connection', this.handleCloseConnection);
-    ipcRenderer.on('mitmengine-error', this.handleError);
+    props.ipcRenderer.on('mitmengine-new-connection', this.addConnection);
+    props.ipcRenderer.on('mitmengine-data', this.handleMitmData);
+    props.ipcRenderer.on('mitmengine-close-connection', this.handleCloseConnection);
+    props.ipcRenderer.on('mitmengine-error', this.handleError);
 
-    ipcRenderer.on('changeHost', this.changeHostIpc);
-    ipcRenderer.on('changePort', this.changePortIpc);
-    ipcRenderer.on('changeUpstreamHost', this.changeUpstreamHostIpc);
-    ipcRenderer.on('changeUpstreamPort', this.changeUpstreamPortIpc);
-    ipcRenderer.on('dialogAlert', this.alertIpc);
+    props.ipcRenderer.on('changeHost', (e, host) => this.setState({ changeHostOpen: true, textFieldValue: host }));
+    props.ipcRenderer.on('changePort', (e, port) => this.setState({ changePortOpen: true, textFieldValue: port }));
+    props.ipcRenderer.on('changeUpstreamHost', (e, host) => this.setState({ changeUpstreamHostOpen: true, textFieldValue: host }));
+    props.ipcRenderer.on('changeUpstreamPort', (e, port) => this.setState({ changeUpstreamPortOpen: true, textFieldValue: port }));
+    props.ipcRenderer.on('dialogAlert', (e, text) => this.setState({ alertOpen: true, alertText: text }));
 
-    ipcRenderer.on('clearInactive', this.clearInactiveConnections);
+    props.ipcRenderer.on('clearInactive', this.clearInactiveConnections);
   }
 
   getCurrentDateTime() {
@@ -75,19 +74,25 @@ export default class Main extends React.Component {
   }
 
   handleError(event, message, trace) {
-    let {alerts} = this.state;
-
-    alerts.push({
-      time: this.getCurrentDateTime(),
-      msg: message
-    });
-
     console.error(trace);
+
+    let {alerts} = this.state;
+    let lastIndex = alerts.length - 1;
+
+    if(alerts.length !== 0 && alerts[lastIndex].msg === message) {
+      alerts[lastIndex].time = this.getCurrentDateTime();
+    } else {
+      alerts = alerts.concat([{
+        time: this.getCurrentDateTime(),
+        msg: message
+      }]);
+    }
+
     this.setState({ alerts: alerts });
   }
 
   connectionRowIndexById(id) {
-    if(typeof this.state.connectionIndex[id] === 'undefined')
+    if(!(id in this.state.connectionIndex))
       return -1;
 
     return parseInt(this.state.connectionIndex[id]);
@@ -114,7 +119,7 @@ export default class Main extends React.Component {
 
     connectionIndex[id] = connectionIndex[id] - 1; //.push() returns length
 
-    ipcRenderer.send('debug', 'Main', `Connection ${id} row ${connectionIndex[id]}: ${serverUrl}`);
+    this.props.ipcRenderer.send('debug', 'Main', `Connection ${id} row ${connectionIndex[id]}: ${serverUrl}`);
 
     messageHistory[id] = [];
     heldForIntercepts[id] = {
@@ -129,8 +134,8 @@ export default class Main extends React.Component {
       connectionIndex: connectionIndex
     },
     () => {
-      ipcRenderer.send('debug', 'Main', `activeConnections = ${JSON.stringify(this.state.activeConnections)}`);
-      ipcRenderer.send(`mitmengine-ready-${id}`);
+      this.props.ipcRenderer.send('debug', 'Main', `activeConnections = ${JSON.stringify(this.state.activeConnections)}`);
+      this.props.ipcRenderer.send(`mitmengine-ready-${id}`);
     });
   }
 
@@ -165,7 +170,7 @@ export default class Main extends React.Component {
     if(rowIndex === -1)
       return;
 
-    ipcRenderer.send('debug', 'Main', `Incoming ${id}: ${sender}-${type} with ${message.length} bytes`);
+    this.props.ipcRenderer.send('debug', 'Main', `Incoming ${id}: ${sender}-${type} with ${message.length} bytes`);
 
     let {
       activeConnections,
@@ -173,13 +178,7 @@ export default class Main extends React.Component {
       heldForIntercepts
     } = this.state;
 
-    let connection;
-
-    if(activeConnections[rowIndex].id !== id) {
-      connection = inactiveConnections[rowIndex];
-    } else {
-      connection = activeConnections[rowIndex];
-    }
+    let connection = activeConnections[rowIndex].id === id ? activeConnections[rowIndex] : inactiveConnections[rowIndex];
 
     if(sender === 'server') {
       connection.serverMsgs++;
@@ -256,7 +255,7 @@ export default class Main extends React.Component {
 
     activeConnections.splice(rowIndex, rowIndex+1);
 
-    ipcRenderer.send('debug', 'Main', `Connection ${id} closed`);
+    this.props.ipcRenderer.send('debug', 'Main', `Connection ${id} closed`);
 
     this.setState({
       activeConnections: activeConnections,
@@ -266,20 +265,20 @@ export default class Main extends React.Component {
       openConnectionActive: openConnectionActive
     },
     () => {
-      ipcRenderer.send('debug', 'Main', `activeConnections = ${JSON.stringify(this.state.activeConnections)}`);
-      ipcRenderer.send('debug', 'Main', `inactiveConnections = ${JSON.stringify(this.state.inactiveConnections)}`);
+      this.props.ipcRenderer.send('debug', 'Main', `activeConnections = ${JSON.stringify(this.state.activeConnections)}`);
+      this.props.ipcRenderer.send('debug', 'Main', `inactiveConnections = ${JSON.stringify(this.state.inactiveConnections)}`);
     });
   }
 
   onActiveSelectConnection(selectedId) {
     if(selectedId.length === 1) {
-      ipcRenderer.send('debug', 'Main', `set active connection ${selectedId[0]}`);
+      this.props.ipcRenderer.send('debug', 'Main', `set active connection ${selectedId[0]}`);
       this.setState({
         openConnection: selectedId[0],
         openConnectionActive: true
       });
     } else {
-      ipcRenderer.send('debug', 'Main', 'reset openConnectionActive back to null');
+      this.props.ipcRenderer.send('debug', 'Main', 'reset openConnectionActive back to null');
       this.setState({
         openConnection: null,
         openConnectionActive: null
@@ -289,13 +288,13 @@ export default class Main extends React.Component {
 
   onInactiveSelectConnection(selectedId) {
     if(selectedId.length === 1) {
-      ipcRenderer.send('debug', 'Main', `set inactive connection ${selectedId[0]}`);
+      this.props.ipcRenderer.send('debug', 'Main', `set inactive connection ${selectedId[0]}`);
       this.setState({
         openConnection: selectedId[0],
         openConnectionActive: false
       });
     } else {
-      ipcRenderer.send('debug', 'Main', 'reset openConnectionActive back to null');
+      this.props.ipcRenderer.send('debug', 'Main', 'reset openConnectionActive back to null');
       this.setState({
         openConnection: null,
         openConnectionActive: null
@@ -305,18 +304,13 @@ export default class Main extends React.Component {
 
   handleToggleInterceptState(id, sender, checked) {
     let {heldForIntercepts} = this.state;
-    let messageArr = sender === 'client' ? heldForIntercepts[id].client : heldForIntercepts[id].server;
 
     if(messageArr !== false && checked === false) {
-      messageArr.forEach(individualMsg =>
+      heldForIntercepts[id][sender].forEach(individualMsg =>
         this.handleMessageSent(id, sender, individualMsg.type, individualMsg.data, individualMsg.binary, individualMsg.masked, false, false));
     }
 
-    if(sender === 'client') {
-      heldForIntercepts[id].client = checked ? [] : false;
-    } else {
-      heldForIntercepts[id].server = checked ? [] : false;
-    }
+    heldForIntercepts[id][sender] = checked ? [] : false;
 
     this.setState({
       heldForIntercepts: heldForIntercepts
@@ -351,13 +345,6 @@ export default class Main extends React.Component {
   handleMessageSent(id, sender, type, data, binary, masked, intercepted, custom) {
     let {messageHistory} = this.state;
 
-    ipcRenderer.send('debug', 'Main', `Outgoing ${id}: ${sender}-${type} with ${data.length} bytes`);
-
-    ipcRenderer.send('mitmengine-send-' + id, sender, type, data, {
-      binary: binary,
-      mask: masked
-    });
-
     messageHistory[id].push({
       time: this.getCurrentDateTime(),
       sender: sender,
@@ -372,7 +359,10 @@ export default class Main extends React.Component {
       custom: custom ? (<Checkbox checked={true} disabled={true} />) : (<Checkbox disabled={true} />)
     });
 
-    this.setState({ messageHistory: messageHistory });
+    this.setState({ messageHistory: messageHistory }, () => {
+      this.props.ipcRenderer.send('debug', 'Main', `Outgoing ${id}: ${sender}-${type} with ${data.length} bytes`);
+      this.props.ipcRenderer.send(`mitmengine-send-${id}`, sender, type, data, { binary: binary, mask: masked });
+    });
   }
 
   updateDimensions() {
@@ -390,39 +380,15 @@ export default class Main extends React.Component {
     window.removeEventListener('resize', this.updateDimensions);
   }
 
-  changeHostIpc(e, hostname) {
-    this.setState({ changeHostOpen: true, textFieldValue: hostname });
-  }
-
-  changePortIpc(e, port) {
-    this.setState({ changePortOpen: true, textFieldValue: port });
-  }
-
-  changeUpstreamHostIpc(e, hostname) {
-    this.setState({ changeUpstreamHostOpen: true, textFieldValue: hostname });
-  }
-
-  changeUpstreamPortIpc(e, port) {
-    this.setState({ changeUpstreamPortOpen: true, textFieldValue: port });
-  }
-
-  alertIpc(e, text) {
-    this.setState({ alertOpen: true, alertText: text });
-  }
-
   changeSubmit() {
     if(this.state.changeHostOpen === true) {
-      ipcRenderer.send('changeHostCallback', this.state.textFieldValue);
-      this.setState({ changeHostOpen: false });
+      this.setState({ changeHostOpen: false }, () => this.props.ipcRenderer.send('changeHostCallback', this.state.textFieldValue));
     } else if(this.state.changePortOpen === true) {
-      ipcRenderer.send('changePortCallback', this.state.textFieldValue);
-      this.setState({ changePortOpen: false });
+      this.setState({ changePortOpen: false }, () => this.props.ipcRenderer.send('changePortCallback', this.state.textFieldValue));
     } else if(this.state.changeUpstreamHostOpen === true) {
-      ipcRenderer.send('changeUpstreamHostCallback', this.state.textFieldValue);
-      this.setState({ changeUpstreamHostOpen: false });
+      this.setState({ changeUpstreamHostOpen: false }, () => this.props.ipcRenderer.send('changeUpstreamHostCallback', this.state.textFieldValue));
     } else if(this.state.changeUpstreamPortOpen === true) {
-      ipcRenderer.send('changeUpstreamPortCallback', this.state.textFieldValue);
-      this.setState({ changeUpstreamPortOpen: false });
+      this.setState({ changeUpstreamPortOpen: false }, () => this.props.ipcRenderer.send('changeUpstreamPortCallback', this.state.textFieldValue));
     }
   }
 
@@ -507,8 +473,6 @@ export default class Main extends React.Component {
     ]
 
     const alertsTab = `Alerts (${alerts.length})`;
-    const connectionList = openConnectionActive ? activeConnections : inactiveConnections;
-
     let topHeight = 0;
     let bottomHeight = 0;
 
@@ -529,6 +493,7 @@ export default class Main extends React.Component {
                 <Tab label="Active Connections">
                   <div style={{height: (topHeight - 50) + 'px'}}>
                     <ActiveConnection
+                      ipcRenderer={this.props.ipcRenderer}
                       list={activeConnections}
                       onSelectConnection={this.onActiveSelectConnection}
                       tableStyle={tableStyle}
@@ -539,6 +504,7 @@ export default class Main extends React.Component {
                 <Tab label="Inactive Connections">
                   <div style={{height: (topHeight - 50) + 'px'}}>
                     <InactiveConnection
+                      ipcRenderer={this.props.ipcRenderer}
                       list={inactiveConnections}
                       onSelectConnection={this.onInactiveSelectConnection}
                       tableStyle={tableStyle}
@@ -549,6 +515,7 @@ export default class Main extends React.Component {
                 <Tab label={alertsTab}>
                   <div style={{height: (topHeight - 50) + 'px'}}>
                     <AlertsTab
+                      ipcRenderer={this.props.ipcRenderer}
                       alerts={alerts}
                       height={(topHeight-50)}
                     />
@@ -566,6 +533,7 @@ export default class Main extends React.Component {
                       <Tab label="History">
                         <div style={{ height: (bottomHeight - 50) + 'px', width: clientWidth }}>
                           <HistoryTab
+                            ipcRenderer={this.props.ipcRenderer}
                             messageHistory={messageHistory}
                             id={openConnection}
                             tableStyle={tableContentStyle}
@@ -577,6 +545,7 @@ export default class Main extends React.Component {
                       <Tab label="Custom">
                         <div style={{ height: (bottomHeight - 50) + 'px', width: clientWidth }}>
                           <CustomTab
+                            ipcRenderer={this.props.ipcRenderer}
                             id={openConnection}
                             onMessageSent={this.handleMessageSent}
                             clientHeight={bottomHeight}
@@ -587,6 +556,7 @@ export default class Main extends React.Component {
                       <Tab label="Intercept">
                         <div style={{ height: (bottomHeight - 50) + 'px', width: clientWidth }}>
                           <InterceptTab
+                            ipcRenderer={this.props.ipcRenderer}
                             id={openConnection}
                             onToggleInterceptState={this.handleToggleInterceptState}
                             onMessageSent={this.handleMessageSent}
@@ -612,6 +582,7 @@ export default class Main extends React.Component {
                       <Tab label="History">
                         <div style={{height: (bottomHeight - 50) + 'px'}}>
                           <HistoryTab
+                            ipcRenderer={this.props.ipcRenderer}
                             messageHistory={messageHistory}
                             id={openConnection}
                             tableStyle={tableContentStyle}

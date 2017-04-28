@@ -1,4 +1,3 @@
-import {ipcRenderer} from 'electron';
 import React from 'react';
 import autoBind from 'react-autobind';
 
@@ -34,7 +33,7 @@ export default class InterceptTab extends React.Component {
     ['client', 'server'].forEach(sender => {
       if(nextProps.heldForIntercept[sender] !== false) {
         waiting[sender] = nextProps.heldForIntercept[sender].length > 0 ? `(${nextProps.heldForIntercept[sender].length} messages waiting)` : '';
-        ipcRenderer.send('debug', 'InterceptTab', `this.state.waiting[${sender}] = ${waiting[sender]}`);
+        nextProps.ipcRenderer.send('debug', 'InterceptTab', `this.state.waiting[${sender}] = ${waiting[sender]}`);
 
         if(interceptionOn[sender] && editing[sender] === false && nextProps.heldForIntercept[sender].length > 0) {
           editing[sender] = true;
@@ -105,8 +104,8 @@ export default class InterceptTab extends React.Component {
     const {interceptionOn} = this.state;
     interceptionOn[sender] = checked;
 
-    this.setState({ interceptionOn: interceptionOn });
-    this.props.onToggleInterceptState(this.props.id, sender, checked);
+    this.setState({ interceptionOn: interceptionOn },
+      () => this.props.onToggleInterceptState(this.props.id, sender, checked));
   }
 
   changeVal(sender, name, val) {

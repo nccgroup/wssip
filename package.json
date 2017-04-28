@@ -1,16 +1,18 @@
 {
   "name": "wssip",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Intercepting Proxy Application to capture, modify and send custom data from one WebSocket host to another, primarily for penetration testing. Supports WebSocket RFC6455 implementations and Socket.io.",
-  "main": "lib/electron.js",
+  "main": "lib/main.js",
   "bin": {
-    "wssip": "lib/cli.js"
+    "wssip": "lib/main.js"
   },
   "scripts": {
-    "start": "electron .",
-    "debug": "DEBUG=wssip:* electron .",
-    "debug:win": "set DEBUG=wssip:* && electron .",
-    "compile": "babel src/ -d public/",
+    "start": "electron lib/electron.js",
+    "web": "node lib/main.js web",
+    "debug": "DEBUG=wssip:* electron lib/electron.js --devtools",
+    "debug:win": "set DEBUG=wssip:* && electron lib/electron.js --devtools",
+    "compile": "babel src/ -d public/ --presets=tomekf-es2016-node6,react --plugins=transform-async-to-generator,array-includes",
+    "compile:watch": "babel src/ -d public/ --presets=tomekf-es2016-node6,react --plugins=transform-async-to-generator,array-includes --watch",
     "build": "npm run compile && electron-forge make",
     "package": "npm run compile && electron-forge package",
     "lint:src": "eslint src",
@@ -27,7 +29,9 @@
     "ws",
     "wssip",
     "websocket",
+    "websockets",
     "socketio",
+    "socket.io",
     "interceptor",
     "proxy",
     "mitm",
@@ -46,20 +50,20 @@
     "hexy": "^0.2.9",
     "material-ui": "^0.17.4",
     "node-forge": "^0.7.1",
-    "node-libcurl": "^1.1.0",
     "react": "^15.5.3",
     "react-autobind": "^1.0.6",
     "react-data-grid": "^2.0.31",
     "react-dom": "^15.5.3",
     "react-tap-event-plugin": "^2.0.1",
-    "ws": "^2.3.1"
+    "ws": "^2.3.1",
+    "yargs": "^7.1.0"
   },
   "devDependencies": {
     "babel-cli": "^6.24.1",
     "babel-plugin-array-includes": "^2.0.3",
     "babel-plugin-transform-async-to-generator": "^6.24.1",
-    "babel-preset-es2016-node5": "^1.1.2",
     "babel-preset-react": "^6.24.1",
+    "babel-preset-tomekf-es2016-node6": "^2.0.6",
     "debug": "^2.6.3",
     "electron-prebuilt-compile": "^1.6.7",
     "electron-react-devtools": "^0.4.0",
@@ -68,10 +72,11 @@
     "eslint-plugin-import": "^2.2.0",
     "eslint-plugin-jsx-a11y": "^4.0.0",
     "eslint-plugin-react": "^6.10.3",
+    "mocha": "^3.3.0",
     "react-scripts": "^0.9.5"
   },
   "engines": {
-    "node": ">=7.0.0"
+    "node": ">=7.4.0"
   },
   "config": {
     "forge": {

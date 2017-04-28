@@ -1,6 +1,6 @@
 import React from 'react';
 import autoBind from 'react-autobind';
-import {hexy} from '../../node_modules/hexy/hexy';
+import {hexy} from 'hexy';
 
 import Checkbox from 'material-ui/Checkbox';
 import TextField from 'material-ui/TextField';
