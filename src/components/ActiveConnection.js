@@ -1,7 +1,9 @@
 import React from 'react';
 import autoBind from 'react-autobind';
 import ReactDataGrid from 'react-data-grid';
+
 import {ActiveConnectionColumns} from './_ReactStyle';
+import RowRenderer from './_RowRenderer';
 
 export default class ActiveConnection extends React.Component {
   constructor(props) {
@@ -69,7 +71,7 @@ export default class ActiveConnection extends React.Component {
 
   render() {
     let {list} = this.props;
-    const {height} = this.props;
+    const {height, heldForIntercepts} = this.props;
     const {sortDirection, sortColumn, selected} = this.state;
 
     if(sortDirection !== 'NONE') {
@@ -98,6 +100,7 @@ export default class ActiveConnection extends React.Component {
             selectBy: { indexes: selected }
           }}
           minHeight={height}
+          rowRenderer={<RowRenderer heldForIntecepts={heldForIntercepts} />}
         />
       </div>
     );

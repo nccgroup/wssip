@@ -1,9 +1,9 @@
-import React, {Component} from 'react';
+import React from 'react';
 import autoBind from 'react-autobind';
-
 import {Row} from 'react-data-grid';
 
-class RowRenderer extends Component {
+export default class RowRenderer extends React.Component {
+
   constructor(props) {
     super(props);
     autoBind(this);
@@ -14,8 +14,11 @@ class RowRenderer extends Component {
   }
 
   getStyle() {
+    const {client, server} = this.props.heldForIntercepts[this.row.id];
+    const hasWaitingMessages = (client !== false && client.length > 0) || (server !== false && server.length > 0);
+
     return {
-      color: this.props.hasIntercepts ? 'red' : 'white'
+      color: hasWaitingMessages ? 'red' : 'black'
     }
   }
 
@@ -27,5 +30,3 @@ class RowRenderer extends Component {
     );
   }
 }
-
-export default RowRenderer;

@@ -18,6 +18,10 @@ var _reactDataGrid2 = _interopRequireDefault(_reactDataGrid);
 
 var _ReactStyle = require('./_ReactStyle');
 
+var _RowRenderer = require('./_RowRenderer');
+
+var _RowRenderer2 = _interopRequireDefault(_RowRenderer);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 class ActiveConnection extends _react2.default.Component {
@@ -85,7 +89,7 @@ class ActiveConnection extends _react2.default.Component {
 
   render() {
     let { list } = this.props;
-    const { height } = this.props;
+    const { height, heldForIntercepts } = this.props;
     const { sortDirection, sortColumn, selected } = this.state;
 
     if (sortDirection !== 'NONE') {
@@ -114,7 +118,8 @@ class ActiveConnection extends _react2.default.Component {
           onRowsDeselected: this.onRowsDeselected,
           selectBy: { indexes: selected }
         },
-        minHeight: height
+        minHeight: height,
+        rowRenderer: _react2.default.createElement(_RowRenderer2.default, { heldForIntecepts: heldForIntercepts })
       })
     );
   }

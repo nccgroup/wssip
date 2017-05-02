@@ -70,11 +70,10 @@ Pull requests are welcomed and encouraged. WSSiP supports the `debug` npm packag
 
 Working on for v1.1.0:
 * Exposed API for external scripts for fuzzing (working on now, see above)
-* Highlight Table Rows when Intercepted Message comes in
 * Saving/Resuming Connections from File
 * Using WSSiP in browser without Electron
 
-Working on for v???:
+Working on for v1.1.1:
 * Using something other than Appbar for Custom/Intercept tabs, and styling the options to center better
 
 ### node-libcurl

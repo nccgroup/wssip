@@ -18,7 +18,8 @@ var _reactDataGrid = require('react-data-grid');
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-class RowRenderer extends _react.Component {
+class RowRenderer extends _react2.default.Component {
+
   constructor(props) {
     super(props);
     (0, _reactAutobind2.default)(this);
@@ -29,8 +30,11 @@ class RowRenderer extends _react.Component {
   }
 
   getStyle() {
+    const { client, server } = this.props.heldForIntercepts[this.row.id];
+    const hasWaitingMessages = client !== false && client.length > 0 || server !== false && server.length > 0;
+
     return {
-      color: this.props.hasIntercepts ? 'red' : 'white'
+      color: hasWaitingMessages ? 'red' : 'black'
     };
   }
 
@@ -42,5 +46,4 @@ class RowRenderer extends _react.Component {
     );
   }
 }
-
 exports.default = RowRenderer;

@@ -1,22 +1,23 @@
 {
   "name": "wssip",
-  "version": "1.0.3",
+  "version": "1.1.0",
   "description": "Intercepting Proxy Application to capture, modify and send custom data from one WebSocket host to another, primarily for penetration testing. Supports WebSocket RFC6455 implementations and Socket.io.",
-  "main": "lib/main.js",
+  "main": "lib/electron.js",
   "bin": {
     "wssip": "lib/main.js"
   },
   "scripts": {
-    "start": "electron lib/electron.js",
+    "start": "electron .",
     "web": "node lib/main.js web",
-    "debug": "DEBUG=wssip:* electron lib/electron.js --devtools",
-    "debug:win": "set DEBUG=wssip:* && electron lib/electron.js --devtools",
+    "debug": "DEBUG=wssip:* electron . --devtools --invalidparamtest -x",
+    "debug:win": "set DEBUG=wssip:* && electron . --devtools",
     "compile": "babel src/ -d public/ --presets=tomekf-es2016-node6,react --plugins=transform-async-to-generator,array-includes",
     "compile:watch": "babel src/ -d public/ --presets=tomekf-es2016-node6,react --plugins=transform-async-to-generator,array-includes --watch",
     "build": "npm run compile && electron-forge make",
     "package": "npm run compile && electron-forge package",
     "lint:src": "eslint src",
-    "lint:lib": "eslint lib"
+    "lint:lib": "eslint lib",
+    "test": "mocha"
   },
   "repository": {
     "type": "git",
@@ -42,13 +43,14 @@
   "license": "AGPL-3.0",
   "dependencies": {
     "bootstrap": "^3.3.7",
-    "conf": "^0.12.0",
+    "conf": "^1.0.0",
     "debug": "^2.6.4",
-    "electron": "^1.6.7",
+    "electron": "1.6.x",
     "electron-compile": "^6.4.0",
+    "electron-prebuilt-compile": "1.6.x",
     "electron-window-state": "^4.1.1",
     "hexy": "^0.2.9",
-    "material-ui": "^0.17.4",
+    "material-ui": "^0.18.0",
     "node-forge": "^0.7.1",
     "react": "^15.5.3",
     "react-autobind": "^1.0.6",
@@ -64,8 +66,9 @@
     "babel-plugin-transform-async-to-generator": "^6.24.1",
     "babel-preset-react": "^6.24.1",
     "babel-preset-tomekf-es2016-node6": "^2.0.6",
+    "chai": "^3.5.0",
     "debug": "^2.6.3",
-    "electron-prebuilt-compile": "^1.6.7",
+    "electron-prebuilt-compile": "1.6.x",
     "electron-react-devtools": "^0.4.0",
     "eslint": "^3.19.0",
     "eslint-config-airbnb": "^14.1.0",
@@ -76,7 +79,7 @@
     "react-scripts": "^0.9.5"
   },
   "engines": {
-    "node": ">=7.4.0"
+    "node": ">=6.10.0"
   },
   "config": {
     "forge": {

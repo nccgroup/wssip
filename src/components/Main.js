@@ -60,6 +60,10 @@ export default class Main extends React.Component {
     props.ipcRenderer.on('dialogAlert', (e, text) => this.setState({ alertOpen: true, alertText: text }));
 
     props.ipcRenderer.on('clearInactive', this.clearInactiveConnections);
+
+    props.ipcRenderer.on('wssip-new', this.handleClearAll);
+    props.ipcRenderer.on('wssip-import', this.handleImport);
+    props.ipcRenderer.on('wssip-export', this.handleExport);
   }
 
   getCurrentDateTime() {
@@ -343,6 +347,7 @@ export default class Main extends React.Component {
   }
 
   handleMessageSent(id, sender, type, data, binary, masked, intercepted, custom) {
+    id = Number(id);
     let {messageHistory} = this.state;
 
     messageHistory[id].push({
@@ -378,6 +383,20 @@ export default class Main extends React.Component {
 
   componentWillUnmount() {
     window.removeEventListener('resize', this.updateDimensions);
+  }
+
+  handleClearAll(event) {
+    //user goes to File > New
+  }
+
+  handleImport(event, contents) {
+
+  }
+
+  handleExport(event, filename) {
+    this.props.ipcRenderer.send('savefileCallback', filename, {
+      wssip: this.state.inactiveConnections
+    });
   }
 
   changeSubmit() {
@@ -498,6 +517,7 @@ export default class Main extends React.Component {
                       onSelectConnection={this.onActiveSelectConnection}
                       tableStyle={tableStyle}
                       height={(topHeight - 50)}
+                      heldForIntercepts={heldForIntercepts}
                     />
                   </div>
                 </Tab>

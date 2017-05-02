@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script>
+      require('electron').ipcRenderer.on('new-title', (e, title) => {
+        document.title = title;
+      });
+    </script>
+    <link rel="stylesheet" type="text/css" href="../node_modules/bootstrap/dist/css/bootstrap.min.css" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script>
+      require('./App');
+    </script>
+  </body>
+</html>
