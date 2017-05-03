@@ -1,6 +1,6 @@
 {
   "name": "wssip",
-  "version": "1.1.0",
+  "version": "1.0.3",
   "description": "Intercepting Proxy Application to capture, modify and send custom data from one WebSocket host to another, primarily for penetration testing. Supports WebSocket RFC6455 implementations and Socket.io.",
   "main": "lib/electron.js",
   "bin": {
@@ -9,12 +9,13 @@
   "scripts": {
     "start": "electron .",
     "web": "node lib/main.js web",
-    "debug": "DEBUG=wssip:* electron . --devtools --invalidparamtest -x",
+    "debug": "DEBUG=wssip:* electron . --devtools",
     "debug:win": "set DEBUG=wssip:* && electron . --devtools",
-    "compile": "babel src/ -d public/ --presets=tomekf-es2016-node6,react --plugins=transform-async-to-generator,array-includes",
+    "compile": "babel src/ -d public/ --presets=tomekf-es2016-node6,react --plugins=transform-async-to-generator,array-includes && babel --presets=node6 --plugins=transform-async-to-generator,array-includes lib/mitmengine.js -o lib/mitmengine-node6.js",
     "compile:watch": "babel src/ -d public/ --presets=tomekf-es2016-node6,react --plugins=transform-async-to-generator,array-includes --watch",
     "build": "npm run compile && electron-forge make",
     "package": "npm run compile && electron-forge package",
+    "prepublish": "npm run compile",
     "lint:src": "eslint src",
     "lint:lib": "eslint lib",
     "test": "mocha"
@@ -44,7 +45,6 @@
   "dependencies": {
     "bootstrap": "^3.3.7",
     "conf": "^1.0.0",
-    "debug": "^2.6.4",
     "electron": "1.6.x",
     "electron-compile": "^6.4.0",
     "electron-prebuilt-compile": "1.6.x",
@@ -64,10 +64,11 @@
     "babel-cli": "^6.24.1",
     "babel-plugin-array-includes": "^2.0.3",
     "babel-plugin-transform-async-to-generator": "^6.24.1",
+    "babel-preset-node6": "^11.0.0",
     "babel-preset-react": "^6.24.1",
     "babel-preset-tomekf-es2016-node6": "^2.0.6",
     "chai": "^3.5.0",
-    "debug": "^2.6.3",
+    "debug": "^2.6.4",
     "electron-prebuilt-compile": "1.6.x",
     "electron-react-devtools": "^0.4.0",
     "eslint": "^3.19.0",

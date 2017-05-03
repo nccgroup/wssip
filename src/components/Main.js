@@ -40,8 +40,7 @@ export default class Main extends React.Component {
 
       changeHostOpen: false,
       changePortOpen: false,
-      changeUpstreamHostOpen: false,
-      changeUpstreamPortOpen: false,
+      changeUpstreamOpen: false,
       textFieldValue: '',
 
       alertOpen: false,
@@ -55,8 +54,7 @@ export default class Main extends React.Component {
 
     props.ipcRenderer.on('changeHost', (e, host) => this.setState({ changeHostOpen: true, textFieldValue: host }));
     props.ipcRenderer.on('changePort', (e, port) => this.setState({ changePortOpen: true, textFieldValue: port }));
-    props.ipcRenderer.on('changeUpstreamHost', (e, host) => this.setState({ changeUpstreamHostOpen: true, textFieldValue: host }));
-    props.ipcRenderer.on('changeUpstreamPort', (e, port) => this.setState({ changeUpstreamPortOpen: true, textFieldValue: port }));
+    props.ipcRenderer.on('changeUpstream', (e, url) => this.setState({ changeUpstreamOpen: true, textFieldValue: url }));
     props.ipcRenderer.on('dialogAlert', (e, text) => this.setState({ alertOpen: true, alertText: text }));
 
     props.ipcRenderer.on('clearInactive', this.clearInactiveConnections);
@@ -404,10 +402,8 @@ export default class Main extends React.Component {
       this.setState({ changeHostOpen: false }, () => this.props.ipcRenderer.send('changeHostCallback', this.state.textFieldValue));
     } else if(this.state.changePortOpen === true) {
       this.setState({ changePortOpen: false }, () => this.props.ipcRenderer.send('changePortCallback', this.state.textFieldValue));
-    } else if(this.state.changeUpstreamHostOpen === true) {
-      this.setState({ changeUpstreamHostOpen: false }, () => this.props.ipcRenderer.send('changeUpstreamHostCallback', this.state.textFieldValue));
-    } else if(this.state.changeUpstreamPortOpen === true) {
-      this.setState({ changeUpstreamPortOpen: false }, () => this.props.ipcRenderer.send('changeUpstreamPortCallback', this.state.textFieldValue));
+    } else if(this.state.changeUpstreamOpen === true) {
+      this.setState({ changeUpstreamOpen: false }, () => this.props.ipcRenderer.send('changeUpstreamCallback', this.state.textFieldValue));
     }
   }
 
@@ -427,8 +423,7 @@ export default class Main extends React.Component {
       textFieldValue,
       changeHostOpen,
       changePortOpen,
-      changeUpstreamHostOpen,
-      changeUpstreamPortOpen
+      changeUpstreamOpen
     } = this.state;
 
     const changeHostActions = [
@@ -457,24 +452,11 @@ export default class Main extends React.Component {
       />,
     ];
 
-    const changeUpstreamHostActions = [
+    const changeUpstreamActions = [
       <FlatButton
         label="Cancel"
         primary={true}
-        onTouchTap={() => this.setState({ changeUpstreamHostOpen: false })}
-      />,
-      <FlatButton
-        label="Submit"
-        primary={true}
-        onTouchTap={this.changeSubmit}
-      />,
-    ];
-
-    const changeUpstreamPortActions = [
-      <FlatButton
-        label="Cancel"
-        primary={true}
-        onTouchTap={() => this.setState({ changeUpstreamPortOpen: false })}
+        onTouchTap={() => this.setState({ changeUpstreamOpen: false })}
       />,
       <FlatButton
         label="Submit"
@@ -628,10 +610,10 @@ export default class Main extends React.Component {
               </Dialog>
             </div>
             <div>
-              <Dialog title="Change Upstream Proxy Host" actions={changeUpstreamHostActions} modal={true} open={changeUpstreamHostOpen}>
+              <Dialog title="Change Upstream Proxy URL" actions={changeUpstreamActions} modal={true} open={changeUpstreamOpen}>
                 <div>
                   <TextField
-                    hintText="Hostname (Default: 127.0.0.1)"
+                    hintText="http://hostname:port/"
                     value={textFieldValue}
                     onChange={e => this.setState({ textFieldValue: e.target.value })}
                   />
@@ -643,17 +625,6 @@ export default class Main extends React.Component {
                 <div>
                   <TextField
                     hintText="Port (Default: 8080)"
-                    value={textFieldValue}
-                    onChange={e => this.setState({ textFieldValue: e.target.value })}
-                  />
-                </div>
-              </Dialog>
-            </div>
-            <div>
-              <Dialog title="Change Upstream Proxy Port" actions={changeUpstreamPortActions} modal={true} open={changeUpstreamPortOpen}>
-                <div>
-                  <TextField
-                    hintText="Port"
                     value={textFieldValue}
                     onChange={e => this.setState({ textFieldValue: e.target.value })}
                   />

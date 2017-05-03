@@ -88,8 +88,7 @@ class Main extends _react2.default.Component {
 
       changeHostOpen: false,
       changePortOpen: false,
-      changeUpstreamHostOpen: false,
-      changeUpstreamPortOpen: false,
+      changeUpstreamOpen: false,
       textFieldValue: '',
 
       alertOpen: false,
@@ -103,8 +102,7 @@ class Main extends _react2.default.Component {
 
     props.ipcRenderer.on('changeHost', (e, host) => this.setState({ changeHostOpen: true, textFieldValue: host }));
     props.ipcRenderer.on('changePort', (e, port) => this.setState({ changePortOpen: true, textFieldValue: port }));
-    props.ipcRenderer.on('changeUpstreamHost', (e, host) => this.setState({ changeUpstreamHostOpen: true, textFieldValue: host }));
-    props.ipcRenderer.on('changeUpstreamPort', (e, port) => this.setState({ changeUpstreamPortOpen: true, textFieldValue: port }));
+    props.ipcRenderer.on('changeUpstream', (e, url) => this.setState({ changeUpstreamOpen: true, textFieldValue: url }));
     props.ipcRenderer.on('dialogAlert', (e, text) => this.setState({ alertOpen: true, alertText: text }));
 
     props.ipcRenderer.on('clearInactive', this.clearInactiveConnections);
@@ -435,10 +433,8 @@ class Main extends _react2.default.Component {
       this.setState({ changeHostOpen: false }, () => this.props.ipcRenderer.send('changeHostCallback', this.state.textFieldValue));
     } else if (this.state.changePortOpen === true) {
       this.setState({ changePortOpen: false }, () => this.props.ipcRenderer.send('changePortCallback', this.state.textFieldValue));
-    } else if (this.state.changeUpstreamHostOpen === true) {
-      this.setState({ changeUpstreamHostOpen: false }, () => this.props.ipcRenderer.send('changeUpstreamHostCallback', this.state.textFieldValue));
-    } else if (this.state.changeUpstreamPortOpen === true) {
-      this.setState({ changeUpstreamPortOpen: false }, () => this.props.ipcRenderer.send('changeUpstreamPortCallback', this.state.textFieldValue));
+    } else if (this.state.changeUpstreamOpen === true) {
+      this.setState({ changeUpstreamOpen: false }, () => this.props.ipcRenderer.send('changeUpstreamCallback', this.state.textFieldValue));
     }
   }
 
@@ -458,8 +454,7 @@ class Main extends _react2.default.Component {
       textFieldValue,
       changeHostOpen,
       changePortOpen,
-      changeUpstreamHostOpen,
-      changeUpstreamPortOpen
+      changeUpstreamOpen
     } = this.state;
 
     const changeHostActions = [_react2.default.createElement(_FlatButton2.default, {
@@ -482,20 +477,10 @@ class Main extends _react2.default.Component {
       onTouchTap: this.changeSubmit
     })];
 
-    const changeUpstreamHostActions = [_react2.default.createElement(_FlatButton2.default, {
+    const changeUpstreamActions = [_react2.default.createElement(_FlatButton2.default, {
       label: 'Cancel',
       primary: true,
-      onTouchTap: () => this.setState({ changeUpstreamHostOpen: false })
-    }), _react2.default.createElement(_FlatButton2.default, {
-      label: 'Submit',
-      primary: true,
-      onTouchTap: this.changeSubmit
-    })];
-
-    const changeUpstreamPortActions = [_react2.default.createElement(_FlatButton2.default, {
-      label: 'Cancel',
-      primary: true,
-      onTouchTap: () => this.setState({ changeUpstreamPortOpen: false })
+      onTouchTap: () => this.setState({ changeUpstreamOpen: false })
     }), _react2.default.createElement(_FlatButton2.default, {
       label: 'Submit',
       primary: true,
@@ -694,12 +679,12 @@ class Main extends _react2.default.Component {
             null,
             _react2.default.createElement(
               _Dialog2.default,
-              { title: 'Change Upstream Proxy Host', actions: changeUpstreamHostActions, modal: true, open: changeUpstreamHostOpen },
+              { title: 'Change Upstream Proxy URL', actions: changeUpstreamActions, modal: true, open: changeUpstreamOpen },
               _react2.default.createElement(
                 'div',
                 null,
                 _react2.default.createElement(_TextField2.default, {
-                  hintText: 'Hostname (Default: 127.0.0.1)',
+                  hintText: 'http://hostname:port/',
                   value: textFieldValue,
                   onChange: e => this.setState({ textFieldValue: e.target.value })
                 })
@@ -717,23 +702,6 @@ class Main extends _react2.default.Component {
                 null,
                 _react2.default.createElement(_TextField2.default, {
                   hintText: 'Port (Default: 8080)',
-                  value: textFieldValue,
-                  onChange: e => this.setState({ textFieldValue: e.target.value })
-                })
-              )
-            )
-          ),
-          _react2.default.createElement(
-            'div',
-            null,
-            _react2.default.createElement(
-              _Dialog2.default,
-              { title: 'Change Upstream Proxy Port', actions: changeUpstreamPortActions, modal: true, open: changeUpstreamPortOpen },
-              _react2.default.createElement(
-                'div',
-                null,
-                _react2.default.createElement(_TextField2.default, {
-                  hintText: 'Port',
                   value: textFieldValue,
                   onChange: e => this.setState({ textFieldValue: e.target.value })
                 })
