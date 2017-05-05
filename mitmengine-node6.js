@@ -16,17 +16,15 @@ const { connect } = require('net'),
       path = require('path').join,
       tls = require('tls');
 
-let debug,
-    libcurl,
-    tunnel,
+let debug = () => () => {},
+    libcurl = null,
+    tunnel = null,
     pkgVersion = '?',
     curlEnabled = true;
 
 try {
   debug = require('debug');
-} catch (e) {
-  debug = () => () => {};
-}
+} catch (e) {}
 
 try {
   libcurl = require('node-libcurl').Curl;
@@ -34,10 +32,8 @@ try {
   curlEnabled = false;
 
   try {
-    tunnel = require('tunnel');
-  } catch (e) {
-    tunnel = null;
-  }
+    tunnel = require('tunnel-agent');
+  } catch (e) {}
 }
 
 try {
@@ -124,9 +120,7 @@ const SSLTLS_ISSUER = [{
 module.exports = class mitmengine extends EventEmitter {
 
   constructor(options = {}) {
-    var _this;
-
-    _this = super();
+    super();
 
     options = Object.assign({
       hostname: 'localhost',
@@ -152,7 +146,6 @@ module.exports = class mitmengine extends EventEmitter {
 
       eraseConnectionHeader: false,
 
-      onRequestHeaders: false,
       onRequestCurl: false,
       onRequestNode: false,
       onRequestData: false,
@@ -206,7 +199,6 @@ module.exports = class mitmengine extends EventEmitter {
     });
 
     this.onRequestCurl = options.onRequestCurl;
-
     this.onRequestNode = options.onRequestNode;
     this.onRequestData = options.onRequestData;
     this.onRequestEnd = options.onRequestEnd;
@@ -225,14 +217,16 @@ module.exports = class mitmengine extends EventEmitter {
         this.debug(`node-libcurl is not installed. Defaulting back to Node.`);
         this.debug(`HTTP/S upstream proxy requests will work, but SOCKS4/5 proxy will not.`);
       } else {
-        this.debug(`Warning: node-libcurl isn't installed and neither is node-tunnel.`);
+        this.debug(`Warning: node-libcurl isn't installed and neither is tunnel-agent.`);
         this.debug(`Be advised that upstream proxy requests will not work as a result.`);
       }
     }
 
-    _asyncToGenerator(function* () {
-      return yield _this._makeNewTempDir();
-    })();
+    this._makeNewTempDir();
+  }
+
+  connectionIsHttps(req, socket, head) {
+    return head.length === 0 || head[0] == 0x80 || head[0] == 0x00;
   }
 
   get timeout() {
@@ -279,105 +273,111 @@ module.exports = class mitmengine extends EventEmitter {
   }
 
   _makeNewTempDir() {
-    return new Promise((resolve, reject) => {
-      fs.access(this.tmpDir, fs.constants.R_OK, err => {
-        if (err) {
+    try {
+      fs.accessSync(this.tmpDir, fs.constants.R_OK);
+    } catch (err) {
+      if (err.code === 'ENOENT') {
+        try {
           fs.mkdirSync(this.tmpDir);
           fs.chmodSync(this.tmpDir, '766');
-
-          fs.access(this.tmpDir, fs.constants.W_OK, e => {
-            if (e) {
-              this.onError(e);
-              reject(e);
-            } else {
-              resolve(true);
-            }
-          });
+        } catch (error) {
+          this.onError(error);
+          return;
         }
-      });
-    });
+
+        try {
+          fs.accessSync(this.tmpDir, fs.constants.W_OK);
+        } catch (error) {
+          this.onError(error);
+        }
+      } else {
+        this.onError(err);
+      }
+    }
   }
 
   cacheNewCA(deleteExisting) {
-    var _this2 = this;
+    return new Promise((resolve, reject) => {
+      let tmpRootCAPEM = path(this.tmpDir, 'ca.pem');
 
-    return new Promise((() => {
-      var _ref2 = _asyncToGenerator(function* (resolve, reject) {
-        if (deleteExisting) {
-          try {
-            fs.unlinkSync(_this2.tmpDir);
-            yield _this2._makeNewTempDir();
-          } catch (e) {
-            reject(e);
+      let expiration = fs.statSync(tmpRootCAPEM).ctime;
+      expiration.setFullYear(expiration.getFullYear() + 2);
+
+      if (deleteExisting) {
+        try {
+          fs.unlinkSync(this.tmpDir);
+          this._makeNewTempDir();
+        } catch (e) {
+          reject(e);
+          return;
+        }
+      }
+
+      if (!fs.existsSync(tmpRootCAPEM) || expiration.getTime() <= new Date().getTime()) {
+        forge.pki.rsa.generateKeyPair({ bits: 2048 }, (err, keys) => {
+          if (err) {
+            reject(err);
             return;
           }
-        }
 
-        let tmpRootCAPEM = path(_this2.tmpDir, 'ca.pem');
+          let certificate = forge.pki.createCertificate();
+          let { privateKey } = keys;
 
-        if (!fs.existsSync(tmpRootCAPEM)) {
-          forge.pki.rsa.generateKeyPair({ bits: 2048 }, function (err, keys) {
-            if (err) {
-              reject(err);
-              return;
-            }
+          certificate.publicKey = keys.publicKey;
+          certificate.serialNumber = crypto.randomBytes(8).toString('hex');
+          certificate.validity.notBefore = new Date();
+          certificate.validity.notAfter = new Date();
+          certificate.validity.notAfter.setFullYear(certificate.validity.notAfter.getFullYear() + 2);
 
-            let certificate = forge.pki.createCertificate();
-            let { privateKey, publicKey } = keys;
+          certificate.setSubject(this.tlsIssuer);
+          certificate.setIssuer(this.tlsIssuer);
+          certificate.setExtensions(this.tlsExtensions);
 
-            certificate.serialNumber = crypto.randomBytes(8).toString('hex');
-            certificate.validity.notBefore = new Date();
-            certificate.validity.notAfter = new Date();
-            certificate.validity.notAfter.setFullYear(certificate.validity.notAfter.getFullYear() + 2);
-
-            certificate.setSubject(_this2.tlsIssuer);
-            certificate.setIssuer(_this2.tlsIssuer);
-            certificate.setExtensions(_this2.tlsExtensions);
-
-            let rootCACallback = _this2.onRootCAGeneration !== false ? _this2.onRootCAGeneration(certificate, privateKey, publicKey) : null;
+          if (this.onRootCAGeneration) {
+            let rootCACallback = this.onRootCAGeneration(certificate, privateKey);
 
             if (typeof rootCACallback === 'object') {
               certificate = typeof rootCACallback.certificate !== 'undefined' ? rootCACallback.certificate : certificate;
               privateKey = typeof rootCACallback.privateKey !== 'undefined' ? rootCACallback.privateKey : privateKey;
-              publicKey = typeof rootCACallback.publicKey !== 'undefined' ? rootCACallback.publicKey : publicKey;
             }
+          }
 
-            certificate.publicKey = publicKey;
-
-            try {
-              certificate.sign(privateKey, forge.md.sha256.create());
-              _this2.emit('new_root_certificate', certificate, privateKey, publicKey);
-
-              fs.writeFileSync(path(_this2.tmpDir, 'ca.pem'), forge.pki.certificateToPem(certificate));
-              fs.writeFileSync(path(_this2.tmpDir, 'ca_pri.pem'), forge.pki.privateKeyToPem(privateKey));
-              fs.writeFileSync(path(_this2.tmpDir, 'ca_pub.pem'), forge.pki.publicKeyToPem(publicKey));
-            } catch (e) {
-              reject(e);
-              return;
-            }
-
-            _this2.debug('generated new CAs');
-            _this2._cachedPrivateKey = privateKey;
-
-            resolve(_this2._cachedPrivateKey);
-          });
-        } else {
           try {
-            _this2.debug('caching existing private key from ca_pri.pem');
-            _this2._cachedPrivateKey = forge.pki.privateKeyFromPem(fs.readFileSync(path(_this2.tmpDir, 'ca_pri.pem')));
+            certificate.sign(privateKey, forge.md.sha256.create());
+
+            let certPEM = forge.pki.certificateToPem(certificate);
+            let privateKeyPEM = forge.pki.privateKeyToPem(privateKey);
+            let publicKeyPEM = forge.pki.publicKeyToPem(keys.publicKey);
+
+            this.emit('new_root_certificate', certPEM, privateKeyPEM, publicKeyPEM);
+
+            fs.writeFileSync(path(this.tmpDir, 'ca.pem'), certPEM);
+            fs.writeFileSync(path(this.tmpDir, 'ca_pri.pem'), privateKeyPEM);
+            fs.writeFileSync(path(this.tmpDir, 'ca_pub.pem'), publicKeyPEM);
           } catch (e) {
             reject(e);
             return;
           }
 
-          resolve(_this2._cachedPrivateKey);
-        }
-      });
+          this.debug('ROOTCA: [none]');
+          this._cachedPrivateKey = privateKey;
 
-      return function (_x, _x2) {
-        return _ref2.apply(this, arguments);
-      };
-    })());
+          resolve(this._cachedPrivateKey);
+        });
+      } else {
+        try {
+          let privKey = path(this.tmpDir, 'ca_pri.pem');
+
+          this.debug(`ROOTCA: ${privKey}`);
+          this._cachedPrivateKey = forge.pki.privateKeyFromPem(fs.readFileSync(privKey));
+        } catch (e) {
+          reject(e);
+          return;
+        }
+
+        resolve(this._cachedPrivateKey);
+      }
+    });
   }
 
   set certificatePEM(contents) {
@@ -419,128 +419,152 @@ module.exports = class mitmengine extends EventEmitter {
     }
   }
 
-  _generateServerKeys(serverUrl, serverCert, res, rej) {
-    forge.pki.rsa.generateKeyPair({ bits: 1024 }, (err, keys) => {
-      if (err) {
-        rej(err);
-        return;
-      }
-
-      let certificate = forge.pki.createCertificate();
-      let hostIdentifier = `${serverUrl.hostname}:${serverUrl.port}`;
-      let { privateKey, publicKey } = keys;
-
-      certificate.serialNumber = serverCert.serialNumber;
-      certificate.validity.notBefore = new Date(serverCert.valid_from);
-      certificate.validity.notAfter = new Date(serverCert.valid_to);
-
-      certificate.setSubject(serverCert.subject);
-      certificate.setIssuer(this.tlsIssuer);
-
-      let serverExtensions = this.tlsServerExtensions.slice(0);
-      let altNamesArray = [];
-      let serverSubjectAltName = typeof serverCert.subjectaltname === 'undefined' ? '' : serverCert.subjectaltname;
-
-      serverSubjectAltName.split(', ').forEach(san => {
-        let individualNames = san.split(':');
-        let sanType = -1;
-
-        //TODO: not 100% sure on names to case
-        switch (individualNames[0]) {
-          case 'otherName':
-          case 'OTHERNAME':
-            sanType = 0;
-            break;
-          case 'email':
-          case 'EMAIL':
-            sanType = 1;
-            break;
-          case 'DNS':
-            sanType = 2;
-            break;
-          case 'X400':
-            sanType = 3;
-            break;
-          case 'URI':
-            sanType = 6;
-            break;
-          case 'IP':
-            sanType = 7;
-            break;
-          case 'RID':
-            sanType = 8;
-            break;
-          default:
-            break;
-        }
-
-        if (sanType === -1) {
+  _generateServerKeys(serverUrl, serverCert) {
+    return new Promise((resolve, reject) => {
+      forge.pki.rsa.generateKeyPair({ bits: 1024 }, (err, keys) => {
+        if (err) {
+          reject(err);
           return;
         }
 
-        altNamesArray.push({
-          type: sanType,
-          value: individualNames[1]
+        let certificate = forge.pki.createCertificate();
+        let hostIdentifier = `${serverUrl.hostname}:${serverUrl.port}`;
+        let { privateKey } = keys;
+
+        certificate.publicKey = keys.publicKey;
+        certificate.serialNumber = serverCert.serialNumber;
+        certificate.validity.notBefore = new Date(serverCert.valid_from);
+        certificate.validity.notAfter = new Date(serverCert.valid_to);
+
+        certificate.setSubject(serverCert.subject);
+        certificate.setIssuer(this.tlsIssuer);
+
+        let serverExtensions = this.tlsServerExtensions.slice(0);
+        let altNamesArray = [];
+        let serverSubjectAltName = typeof serverCert.subjectaltname === 'undefined' ? '' : serverCert.subjectaltname;
+
+        serverSubjectAltName.split(', ').forEach(san => {
+          let individualNames = san.split(':');
+          let sanType = -1;
+
+          //TODO: not 100% sure on names to case
+          switch (individualNames[0]) {
+            case 'otherName':
+            case 'OTHERNAME':
+              sanType = 0;
+              break;
+            case 'email':
+            case 'EMAIL':
+              sanType = 1;
+              break;
+            case 'DNS':
+              sanType = 2;
+              break;
+            case 'X400':
+              sanType = 3;
+              break;
+            case 'URI':
+              sanType = 6;
+              break;
+            case 'IP':
+              sanType = 7;
+              break;
+            case 'RID':
+              sanType = 8;
+              break;
+            default:
+              break;
+          }
+
+          if (sanType === -1) {
+            return;
+          }
+
+          altNamesArray.push({
+            type: sanType,
+            value: individualNames[1]
+          });
         });
+
+        serverExtensions.push({
+          name: 'subjectAltName',
+          altNames: altNamesArray
+        });
+
+        certificate.setExtensions(serverExtensions);
+
+        let signingKey = this._cachedPrivateKey;
+
+        if (this.onServerKeyGeneration) {
+          let callback = this.onServerKeyGeneration(hostIdentifier, certificate, privateKey, signingKey);
+
+          if (typeof callback === 'object') {
+            certificate = typeof callback.certificate !== 'undefined' ? callback.certificate : certificate;
+            privateKey = typeof callback.privateKey !== 'undefined' ? callback.privateKey : privateKey;
+            signingKey = typeof callback.signingKey !== 'undefined' ? callback.signingKey : signingKey;
+          }
+        }
+
+        try {
+          certificate.sign(signingKey, forge.md.sha256.create());
+
+          let certPEM = forge.pki.certificateToPem(certificate);
+          let privateKeyPEM = forge.pki.privateKeyToPem(privateKey);
+          let publicKeyPEM = forge.pki.publicKeyToPem(keys.publicKey);
+
+          this.emit('new_server_keys', hostIdentifier, certPEM, privateKeyPEM, publicKeyPEM);
+
+          fs.writeFileSync(path(this.tmpDir, this._cachedHostsHash[hostIdentifier] + '.pem'), certPEM);
+          fs.writeFileSync(path(this.tmpDir, this._cachedHostsHash[hostIdentifier] + '_pri.pem'), privateKeyPEM);
+          fs.writeFileSync(path(this.tmpDir, this._cachedHostsHash[hostIdentifier] + '_pub.pem'), publicKeyPEM);
+        } catch (e) {
+          reject(e);
+          return;
+        }
+
+        resolve(true);
       });
-
-      serverExtensions.push({
-        name: 'subjectAltName',
-        altNames: altNamesArray
-      });
-
-      certificate.setExtensions(serverExtensions);
-
-      let signingKey = this._cachedPrivateKey;
-      let callback = this.onServerKeyGeneration !== false ? this.onServerKeyGeneration(hostIdentifier, certificate, privateKey, publicKey, signingKey) : null;
-
-      if (typeof callback === 'object') {
-        certificate = typeof callback.certificate !== 'undefined' ? callback.certificate : certificate;
-        privateKey = typeof callback.privateKey !== 'undefined' ? callback.privateKey : privateKey;
-        publicKey = typeof callback.publicKey !== 'undefined' ? callback.publicKey : publicKey;
-        signingKey = typeof callback.signingKey !== 'undefined' ? callback.signingKey : signingKey;
-      }
-
-      certificate.publicKey = publicKey;
-
-      try {
-        certificate.sign(signingKey, forge.md.sha256.create());
-
-        this.emit('new_server_keys', hostIdentifier, certificate, privateKey, publicKey);
-
-        fs.writeFileSync(path(this.tmpDir, this._cachedHostsHash[hostIdentifier] + '.pem'), forge.pki.certificateToPem(certificate));
-        fs.writeFileSync(path(this.tmpDir, this._cachedHostsHash[hostIdentifier] + '_pri.pem'), forge.pki.privateKeyToPem(privateKey));
-        fs.writeFileSync(path(this.tmpDir, this._cachedHostsHash[hostIdentifier] + '_pub.pem'), forge.pki.publicKeyToPem(publicKey));
-      } catch (e) {
-        rej(e);
-        return;
-      }
-
-      res(true);
     });
   }
 
   _getHTTPSCertificate(serverUrl) {
+    var _this = this;
+
     return new Promise((resolve, reject) => {
+      let expiration = 0;
       let hostIdentifier = `${serverUrl.hostname}:${serverUrl.port}`;
-      let pemExists = fs.existsSync(path(this.tmpDir, this._cachedHostsHash[hostIdentifier] + '.pem'));
+      let pemPath = path(this.tmpDir, this._cachedHostsHash[hostIdentifier] + '.pem');
+
+      let pemExists = fs.existsSync(pemPath);
       let publicKeyExists = fs.existsSync(path(this.tmpDir, this._cachedHostsHash[hostIdentifier] + '_pri.pem'));
       let privateKeyExists = fs.existsSync(path(this.tmpDir, this._cachedHostsHash[hostIdentifier] + '_pub.pem'));
 
-      if (!pemExists || !publicKeyExists || !privateKeyExists) {
+      try {
+        expiration = fs.statSync(pemPath).ctime;
+        expiration.setFullYear(expiration.getFullYear() + 2);
+      } catch (e) {}
+
+      if (!pemExists || !publicKeyExists || !privateKeyExists || expiration.getTime() <= new Date().getTime()) {
 
         let socket = tls.connect({
           host: serverUrl.hostname,
           port: serverUrl.port,
           rejectUnauthorized: false,
           timeout: this.timeout
-        }, () => {
+        }, _asyncToGenerator(function* () {
           let serverCert = socket.getPeerCertificate();
           socket.end();
-          this._generateServerKeys(serverUrl, serverCert, resolve, reject);
-        });
 
-        socket.on('error', () => {
+          try {
+            yield _this._generateServerKeys(serverUrl, serverCert);
+          } catch (e) {
+            reject(e);
+          }
+        }));
+
+        socket.on('error', _asyncToGenerator(function* () {
+          //we assume we can't connect to get it (localhost:port?) so generate one anyway
+
           try {
             socket.end();
           } catch (e) {
@@ -551,96 +575,102 @@ module.exports = class mitmengine extends EventEmitter {
             serialNumber: crypto.randomBytes(8).toString('hex'),
             valid_from: new Date(),
             valid_to: new Date(),
-            subject: this.tlsIssuer,
+            subject: _this.tlsIssuer,
             subjectaltname: `URI:${serverUrl.hostname}`
           };
 
           serverCert.valid_to.setFullYear(serverCert.valid_to.getFullYear() + 2);
 
-          this._generateServerKeys(serverUrl, serverCert, resolve, reject);
-        });
+          try {
+            yield _this._generateServerKeys(serverUrl, serverCert);
+          } catch (e) {
+            reject(e);
+          }
+        }));
       } else {
         resolve(true);
       }
     });
   }
 
-  _setupHttpsServer(serverUrl) {
-    var _this3 = this;
+  _setupHttpServer(serverUrl) {
+    var _this2 = this;
 
     return new Promise((() => {
       var _ref3 = _asyncToGenerator(function* (resolve, reject) {
-        let hostIdentifier = `${serverUrl.hostname}:${serverUrl.port}`;
-        let hostnameSHA256 = _this3._cachedHostsHash[hostIdentifier];
+        let isHTTPS = serverUrl.protocol === 'https:';
+        let hostnameSHA256 = _this2._cachedHostsHash[`${serverUrl.hostname}:${serverUrl.port}`];
+        let serverName = (isHTTPS ? 't:' : 'h:') + hostnameSHA256; //TLS vs HTTP
 
-        if (hostnameSHA256 in _this3._cachedServersList) {
-          resolve(_this3._cachedServersList[hostnameSHA256]);
+        if (serverName in _this2._cachedServersList) {
+          resolve(_this2._cachedServersList[serverName]);
           return;
         }
 
-        let result,
-            httpsOptions = {};
+        let options = {};
 
-        try {
-          result = yield _this3._getHTTPSCertificate(serverUrl);
+        if (isHTTPS) {
+          try {
+            yield _this2._getHTTPSCertificate(serverUrl);
 
-          httpsOptions.key = fs.readFileSync(path(_this3.tmpDir, `${hostnameSHA256}_pri.pem`), 'utf8');
-          httpsOptions.cert = fs.readFileSync(path(_this3.tmpDir, `${hostnameSHA256}.pem`), 'utf8');
-        } catch (e) {
-          reject(e);
-          return;
+            options.key = fs.readFileSync(path(_this2.tmpDir, `${hostnameSHA256}_pri.pem`), 'utf8');
+            options.cert = fs.readFileSync(path(_this2.tmpDir, `${hostnameSHA256}.pem`), 'utf8');
+          } catch (e) {
+            reject(e);
+            return;
+          }
         }
 
-        let httpsProxy = https.createServer(httpsOptions);
+        let proxy = (isHTTPS ? https : http).createServer(options);
+        let prefix = isHTTPS ? 'https://' : 'http://';
 
-        httpsProxy.on('connect', function (req, socket, head) {
-          req.url = 'https://' + _this3._fixRequestUrl(req.url, serverUrl);
-          _this3.onConnect(req, socket, head);
+        proxy.on('connect', function (req, socket, head) {
+          req.url = prefix + _this2._fixRequestUrl(req.url, serverUrl);
+          _this2.onConnect(req, socket, head);
         });
 
-        httpsProxy.on('upgrade', function (req, socket, head) {
-          req.url = 'https://' + _this3._fixRequestUrl(req.url, serverUrl);
-          if (_this3.onUpgrade) _this3.onUpgrade(serverUrl, httpsOptions, req, socket, head);
+        proxy.on('upgrade', function (req, socket, head) {
+          req.url = prefix + _this2._fixRequestUrl(req.url, serverUrl);
+          if (_this2.onUpgrade) _this2.onUpgrade(req, socket, head, options);
         });
 
-        httpsProxy.on('request', function (req, res) {
-          req.url = 'https://' + _this3._fixRequestUrl(req.url, serverUrl);
-          _this3.onRequest(req, res);
+        proxy.on('request', function (req, res) {
+          req.url = prefix + _this2._fixRequestUrl(req.url, serverUrl);
+          _this2.onRequest(req, res);
         });
 
-        httpsProxy.on('close', function () {
-          _this3.emit('close_sub', true, httpsProxy);
-          delete _this3._cachedServersList[hostnameSHA256];
+        proxy.on('close', function () {
+          _this2.emit('close_sub', proxy, serverUrl);
+          delete _this2._cachedServersList[serverName];
         });
 
-        httpsProxy.on('clientError', function (err, socket) {
-          _this3.onError(err);
-          socket.end(_this3._writeErrorPage(err));
+        proxy.on('clientError', function (err, socket) {
+          _this2.onError(err);
+          socket.end(_this2._writeErrorPage(err));
         });
 
-        _this3.emit('listen_pre_sub', true, httpsProxy);
-        httpsProxy.listen(function () {
-          _this3.emit('listen_post_sub', true, httpsProxy);
+        _this2.emit('listen_pre_sub', proxy, serverUrl);
+
+        proxy.listen(function () {
+          let { address, port } = proxy.address();
+          _this2.emit('listen_post_sub', proxy, serverUrl, address, port);
+
+          _this2._cachedServersList[serverName] = proxy;
+
+          _this2.debug(`CONNECT: [${isHTTPS ? 'HTTPS' : 'HTTP'}] ${serverUrl.hostname}:${serverUrl.port} <-> ${address === '::' ? oshostn : address}:${port}`);
+
+          resolve(proxy);
         });
-
-        _this3._cachedServersList[hostnameSHA256] = httpsProxy;
-
-        let { address, port } = httpsProxy.address();
-        _this3.debug(`CONNECT: [HTTPS] ${hostIdentifier} <-> ${address === '::' ? oshostn : address}:${port}`);
-
-        resolve(httpsProxy);
       });
 
-      return function (_x3, _x4) {
+      return function (_x, _x2) {
         return _ref3.apply(this, arguments);
       };
     })());
   }
 
-  _setupServer(httpsServer, request, clientSocket, head, hostIdentifier) {
-    let { address, port } = httpsServer.address();
-
-    connect(port, address, () => {
+  _setupNetServer(address, port, request, clientSocket, head) {
+    let serverSocket = connect(port, address, () => {
       clientSocket.write(`HTTP/${request.httpVersion} 200 Connection Established\r\n` + `Proxy-Agent: ${this.name}/${this.version}\r\n\r\n`);
 
       serverSocket.write(head);
@@ -649,68 +679,35 @@ module.exports = class mitmengine extends EventEmitter {
   }
 
   onConnect(request, clientSocket, head) {
-    var _this4 = this;
+    var _this3 = this;
 
-    request.pause();
+    return _asyncToGenerator(function* () {
+      request.pause();
 
-    let parsedUrl = parse(`http://${request.url}`);
-    let hostIdentifier = `${parsedUrl.hostname}:${parsedUrl.port}`;
+      let isHTTPS = _this3.connectionIsHttps(request, clientSocket, head);
+      let parsedUrl = parse(`${isHTTPS ? 'https://' : 'http://'}${request.url}`);
+      let hostIdentifier = `${parsedUrl.hostname}:${parsedUrl.port}`;
 
-    if (!(hostIdentifier in this._cachedHostsHash)) {
-      this._cachedHostsHash[hostIdentifier] = crypto.createHash('sha256').update(hostIdentifier).digest('hex').substr(0, 24);
-    }
+      if (!(hostIdentifier in _this3._cachedHostsHash)) {
+        _this3._cachedHostsHash[hostIdentifier] = crypto.createHash('SHA256').update(hostIdentifier).digest('hex').substr(0, 32);
+      }
 
-    if (head[0] == 0x16 || head[0] == 0x80 || head[0] == 0x00) {
-      this.debug('---> is SSL/TLS');
+      try {
+        let server = yield _this3._setupHttpServer(parsedUrl);
 
-      _asyncToGenerator(function* () {
-        _this4._setupServer((yield _this4._setupHttpsServer(parsedUrl)), request, clientSocket, head, hostIdentifier);
-      })();
-    } else {
-      let httpProxy = http.createServer();
+        let { address, port } = server.address();
+        _this3._setupNetServer(address, port, request, clientSocket, head);
+      } catch (e) {
+        _this3.onError(e);
+        return;
+      }
 
-      httpProxy.on('upgrade', (req, socket, head) => {
-        req.url = 'http://' + this._fixRequestUrl(req.url, parsedUrl);
-
-        if (this.onUpgrade) this.onUpgrade(serverUrl, {}, req, socket, head);
-      });
-
-      httpProxy.on('request', (req, res) => {
-        req.url = 'http://' + this._fixRequestUrl(req.url, parsedUrl);
-        this.onRequest(req, res);
-      });
-
-      httpProxy.on('close', () => {
-        this.emit('close_sub', false, httpProxy);
-        delete this._cachedServersList[hostnameSHA256];
-      });
-
-      httpProxy.on('clientError', (err, socket) => {
-        this.onError(err);
-        socket.end(this._writeErrorPage(err));
-      });
-
-      this.emit('listen_pre_sub', false, httpProxy);
-      httpProxy.listen(() => {
-        this.emit('listen_post_sub', false, httpProxy);
-      });
-
-      this._cachedServersList[this._cachedHostsHash[hostIdentifier]] = httpProxy;
-
-      let { address, port } = httpProxy.address();
-      this.debug(`CONNECT: [HTTP] ${hostIdentifier} <-> ${address === '::' ? oshostn : address}:${port}`);
-
-      this._setupServer(httpProxy, request, clientSocket, head, hostIdentifier);
-    }
-
-    request.resume();
+      request.resume();
+    })();
   }
 
   _writeErrorPage(error) {
-    let stack = error.stack;
-    stack = stack.split('\n').join('<br />\r\n');
-    stack = stack.split(' ').join('&nbsp;');
-    stack = stack.split(' ').join('&nbsp;&nbsp;&nbsp;&nbsp;');
+    let stack = error.stack.split('\n').join('<br/>\r\n').split(' ').join('&nbsp;');
 
     let contents = '<!doctype html>\n';
     contents += '<html>\n';
@@ -727,6 +724,27 @@ module.exports = class mitmengine extends EventEmitter {
     this.debug(`wrote error page (${error.message})`);
 
     return contents;
+  }
+
+  responseData(queuePosition, chunk) {
+    this.emit('response_data', queuePosition, chunk);
+
+    if (this.onResponseData) {
+      chunk = this.onResponseData(queuePosition, chunk);
+    }
+
+    return chunk;
+  }
+
+  responseEnd(queuePosition, chunk) {
+    this.emit('response_end', queuePosition, chunk);
+
+    if (this.onResponseEnd) {
+      chunk = this.onResponseEnd(queuePosition, chunk);
+    }
+
+    this.requestQueue--;
+    return chunk;
   }
 
   _curlRequest(method, url, httpVersion, headers, postField, clientResponse, queuePosition) {
@@ -786,10 +804,10 @@ module.exports = class mitmengine extends EventEmitter {
       }
 
       if (_chunkString === '' && code > 100) {
-        this.emit('response_headers', queuePosition, code, reason, _headers, 'curl');
+        this.emit('response_headers', queuePosition, code, reason, _headers);
 
         if (this.onResponseHeaders) {
-          let respHeaders = this.onResponseHeaders(queuePosition, code, reason, _headers, 'curl');
+          let respHeaders = this.onResponseHeaders(queuePosition, code, reason, _headers);
           if (typeof respHeaders === 'object') {
             code = typeof respHeaders.code === 'number' ? respHeaders.code : code;
             reason = typeof respHeaders.reason === 'string' ? respHeaders.reason : reason;
@@ -826,20 +844,8 @@ module.exports = class mitmengine extends EventEmitter {
       }
     });
 
-    curl.on('data', c => {
-      this.emit('response_data', queuePosition, c, 'curl');
-      if (this.onResponseData) c = this.onResponseData(queuePosition, c, 'curl');
-
-      clientResponse.write(c);
-    });
-
-    curl.on('end', () => {
-      this.emit('response_end', queuePosition, null, 'curl');
-      clientResponse.end();
-      closeConnection();
-
-      this.requestQueue--;
-    });
+    curl.on('data', c => clientResponse.write(this.responseData(queuePosition, c)));
+    curl.on('end', () => clientResponse.end(this.responseEnd(queuePosition, null)));
 
     curl.on('error', error => {
       this.onError(error);
@@ -864,7 +870,7 @@ module.exports = class mitmengine extends EventEmitter {
     }
 
     if (this.useCurl) {
-      this.debug(`REQUEST: [CURL] [${method}] ${url} [HTTP/${httpVersion}]`);
+      this.debug(`REQUEST: [CURL:${queuePosition}] [${method}] ${url} [HTTP/${httpVersion}]`);
 
       let _buf = [],
           _size = 0;
@@ -909,7 +915,7 @@ module.exports = class mitmengine extends EventEmitter {
         this._curlRequest(method, url, httpVersion, _headers, _postField, clientResponse, queuePosition);
       });
     } else {
-      let debugNote = `REQUEST: [NODE] [${method}] ${url} [HTTP/${httpVersion}]`;
+      let debugNote = `REQUEST: [NODE:${queuePosition}] [${method}] ${url} [HTTP/${httpVersion}]`;
 
       let options = Object.assign({
         headers: this._getRawHeaderObj(rawHeaders),
@@ -982,9 +988,9 @@ module.exports = class mitmengine extends EventEmitter {
         let headers = this._getRawHeaderObj(serverResponse.rawHeaders);
 
         if (this.onResponseHeaders) {
-          this.emit('response_headers', queuePosition, code, reason, headers, 'node');
+          this.emit('response_headers', queuePosition, code, reason, headers);
 
-          let callback = this.onResponseHeaders(queuePosition, code, reason, headers, 'node');
+          let callback = this.onResponseHeaders(queuePosition, code, reason, headers);
           if (typeof callback === 'object') {
             code = typeof callback.code === 'number' ? callback.code : code;
             reason = typeof callback.reason === 'string' ? callback.reason : reason;
@@ -1010,17 +1016,8 @@ module.exports = class mitmengine extends EventEmitter {
           this.requestQueue--;
         });
 
-        serverResponse.on('data', c => {
-          this.emit('response_data', queuePosition, c);
-          if (this.onResponseData) c = this.onResponseData(queuePosition, c, 'node');
-          clientResponse.write(c);
-        });
-
-        serverResponse.on('end', c => {
-          this.emit('response_end', queuePosition, c);
-          if (this.onResponseEnd) c = this.onResponseEnd(queuePosition, c, 'curl');
-          clientResponse.end(c);
-        });
+        serverResponse.on('data', c => clientResponse.write(this.responseData(queuePosition, c)));
+        serverResponse.on('end', c => clientResponse.end(this.responseEnd(queuePosition, c)));
 
         serverResponse.resume();
       }).on('error', err => {
@@ -1043,8 +1040,6 @@ module.exports = class mitmengine extends EventEmitter {
 
         if (this.onRequestEnd) c = this.onRequestEnd(queuePosition, c);
         connector.end(c);
-
-        this.requestQueue--;
       });
     }
 
@@ -1069,39 +1064,39 @@ module.exports = class mitmengine extends EventEmitter {
   }
 
   listen(newRootCertificate = false) {
-    var _this5 = this;
+    var _this4 = this;
 
-    if (this.useUpstreamProxy && !this.upstreamUrlValid(this.proxyUrl)) {
-      this.onError(new Error('The configured upstream URL is invalid. Please specify a URL starting with http://, https://, socks4://, socks5:// etc.'));
-      return false;
-    }
-
-    this.emit('listen_pre', this._proxy);
-
-    try {
-      _asyncToGenerator(function* () {
-        return yield _this5.cacheNewCA(newRootCertificate);
-      })();
-
-      if (typeof this.port !== 'number' || typeof this.port === 'number' && (this.port < 0 || this.port > 0xFFFF)) {
-        this.debug(`invalid port: [${typeof this.port} ${this.port}], set to random port`);
-        this.port = 0;
+    return _asyncToGenerator(function* () {
+      if (_this4.useUpstreamProxy && !_this4.upstreamUrlValid(_this4.proxyUrl)) {
+        _this4.onError(new Error('The configured upstream URL is invalid. Please specify a URL starting with http://, https://, socks4://, socks5:// etc.'));
+        return false;
       }
 
-      this._proxy.listen(this.port, this.hostname, () => {
-        this.port = this.port === 0 ? this._proxy.address().port : this.port;
+      _this4.emit('listen_pre', _this4._proxy);
 
-        this.debug(`LISTEN: ${this.hostname}:${this.port}`);
-        this.listening = true;
+      try {
+        yield _this4.cacheNewCA(newRootCertificate);
 
-        this.emit('listen_post', this._proxy);
-      });
-    } catch (e) {
-      this.onError(e);
-      return false;
-    }
+        if (typeof _this4.port !== 'number' || typeof _this4.port === 'number' && (_this4.port < 0 || _this4.port > 0xFFFF)) {
+          _this4.debug(`invalid port: [${typeof _this4.port} ${_this4.port}], set to random port`);
+          _this4.port = 0;
+        }
 
-    return true;
+        _this4._proxy.listen(_this4.port, _this4.hostname, function () {
+          _this4.port = _this4.port === 0 ? _this4._proxy.address().port : _this4.port;
+
+          _this4.debug(`LISTEN: ${_this4.hostname}:${_this4.port}`);
+          _this4.listening = true;
+
+          _this4.emit('listen_post', _this4._proxy);
+        });
+      } catch (e) {
+        _this4.onError(e);
+        return false;
+      }
+
+      return true;
+    })();
   }
 
   end() {

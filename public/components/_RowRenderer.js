@@ -23,6 +23,8 @@ class RowRenderer extends _react2.default.Component {
   constructor(props) {
     super(props);
     (0, _reactAutobind2.default)(this);
+
+    this.row = null;
   }
 
   setScrollLeft(s) {
@@ -30,12 +32,25 @@ class RowRenderer extends _react2.default.Component {
   }
 
   getStyle() {
-    const { client, server } = this.props.heldForIntercepts[this.row.id];
-    const hasWaitingMessages = client !== false && client.length > 0 || server !== false && server.length > 0;
+    let style = {};
 
-    return {
-      color: hasWaitingMessages ? 'red' : 'black'
-    };
+    if (this.row != null && typeof this.row.props.rowData !== 'undefined') {
+      const { heldForIntercepts } = this.props;
+      let id = this.row.props.rowData.id;
+      let style = {};
+
+      if (heldForIntercepts != null && id != null) {
+        const { client, server } = heldForIntercepts;
+
+        if (client !== false && client.length !== 0) {
+          style.color = 'red';
+        } else if (server !== false && server.length !== 0) {
+          style.color = 'red';
+        }
+      }
+    }
+
+    return style;
   }
 
   render() {

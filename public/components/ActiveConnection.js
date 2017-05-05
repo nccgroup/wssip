@@ -87,9 +87,11 @@ class ActiveConnection extends _react2.default.Component {
     });
   }
 
+  hasIntercepts(id) {}
+
   render() {
     let { list } = this.props;
-    const { height, heldForIntercepts } = this.props;
+    const { height } = this.props;
     const { sortDirection, sortColumn, selected } = this.state;
 
     if (sortDirection !== 'NONE') {
@@ -119,7 +121,7 @@ class ActiveConnection extends _react2.default.Component {
           selectBy: { indexes: selected }
         },
         minHeight: height,
-        rowRenderer: _react2.default.createElement(_RowRenderer2.default, { heldForIntecepts: heldForIntercepts })
+        rowRenderer: _react2.default.createElement(_RowRenderer2.default, this.props)
       })
     );
   }

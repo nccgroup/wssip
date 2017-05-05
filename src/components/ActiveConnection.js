@@ -69,9 +69,13 @@ export default class ActiveConnection extends React.Component {
     });
   }
 
+  hasIntercepts(id) {
+
+  }
+
   render() {
     let {list} = this.props;
-    const {height, heldForIntercepts} = this.props;
+    const {height} = this.props;
     const {sortDirection, sortColumn, selected} = this.state;
 
     if(sortDirection !== 'NONE') {
@@ -100,7 +104,7 @@ export default class ActiveConnection extends React.Component {
             selectBy: { indexes: selected }
           }}
           minHeight={height}
-          rowRenderer={<RowRenderer heldForIntecepts={heldForIntercepts} />}
+          rowRenderer={<RowRenderer {...this.props} />}
         />
       </div>
     );
