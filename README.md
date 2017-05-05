@@ -1,5 +1,7 @@
 # WSSiP
 
+[![Travis-CI](https://travis-ci.org/nccgroup/wssip.svg?branch=master)](https://travis-ci.org/nccgroup/wssip) [![npm version](https://img.shields.io/npm/v/wssip.svg)](https://www.npmjs.com/package/wssip) [![npm](https://img.shields.io/npm/dt/wssip.svg)](https://www.npmjs.com/package/wssip) [![github](https://img.shields.io/github/downloads/nccgroup/wssip/total.svg)](https://github.com/nccgroup/wssip) [![github release](https://img.shields.io/github/release/nccgroup/wssip.svg)](https://github.com/nccgroup/wssip/releases) [![license](https://img.shields.io/github/license/nccgroup/wssip.svg)](https://github.com/nccgroup/wssip/blob/master/LICENSE)
+
 Written and maintained by Samantha Chalker (@[thekettu](https://github.com/thekettu)). Short for "WebSocket/Socket.io Proxy", this tool, written in Node.js, provides a user interface to capture, intercept, send custom messages and view all WebSocket and Socket.IO communications between the client and server. Upstream proxy support also means you can forward HTTP/HTTPS traffic to an intercepting proxy of your choice (e.g. Burp Suite or Pappy Proxy) but view WebSocket traffic in WSSiP. More information can be found on the blog post.
 
 There is an outward bridge via HTTP to write a fuzzer in any language you choose to debug and fuzz for security vulnerabilities. For that, see Fuzzing for more details.

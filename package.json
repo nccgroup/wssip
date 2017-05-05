@@ -69,7 +69,7 @@
     "babel-preset-tomekf-es2016-node6": "^2.0.6",
     "chai": "^3.5.0",
     "debug": "^2.6.6",
-    "electron-prebuilt-compile": "^1.6.8",
+    "electron-prebuilt-compile": "1.6.8",
     "electron-react-devtools": "^0.4.0",
     "eslint": "^3.19.0",
     "eslint-config-airbnb": "^14.1.0",
