@@ -235,7 +235,7 @@ Emitted when headers are received from the server.
 - `method` {String}
 - `url` {String}
 - `httpVersion` {String}
-- `headers` {Array}
+- `headers` {Object}
 - `postField` {String}
 
 Emitted when a HTTP/S request comes in via the proxy and does the request via Curl.
