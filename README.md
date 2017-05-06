@@ -83,13 +83,13 @@ In the future, I'll try to rewrite everything to TypeScript.
 There is a custom man-in-the-middle Node.js class that I wrote that is not within the **lib** folder named "mitmengine.js". For any other applications wishing to use this, you can simply do:
 
 ~~~
-const mitmengine = require('wssip/mitmengine');
+const mitmengine = require('wssip/lib/mitmengine');
 ~~~
 
 For Node versions below 7.6, due to a lack of async/await support in V8, there is also the option to include mitmengine-node6.js as:
 
 ~~~
-const mitmengine = require('wssip/mitmengine-node6');
+const mitmengine = require('wssip/lib/mitmengine-node6');
 ~~~
 
 mitmengine.js will use `http.request()` and `https.request()` to retrieve data from web servers as a part of the man-in-the-middle component, but if `node-libcurl` is installed via npm/yarn either globally or in the working directory, it will use that module instead. In testing, some web servers have unexpectedly terminated their connections while using the `.request()` function, but will not terminate using curl to fetch a web page. SOCKS4/5 proxies are also supported by curl. As a result, some users may opt to use curl instead.
