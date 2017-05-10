@@ -60,7 +60,7 @@ Using Terminal:
 
 ~~~bash
 # Install formula
-brew install https://github.com/nccgroup/wssip/blob/master/wssip.rb
+brew install https://raw.githubusercontent.com/nccgroup/wssip/master/wssip.rb
 
 # ...and launch WSSiP!
 wssip
