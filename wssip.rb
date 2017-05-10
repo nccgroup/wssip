@@ -1,3 +1,5 @@
+require "language/node"
+
 class Wssip < Formula
   desc "Proxy application for manipulating WebSocket messages"
   homepage "https://github.com/nccgroup/wssip"
