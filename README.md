@@ -12,13 +12,23 @@ There is an outward bridge via HTTP to write a fuzzer in any language you choose
 
 Run the following in your command line:
 
+**npm**:
+
 ~~~bash
 # Install WSSiP
 npm install -g wssip
-# or via yarn:
-# yarn global add wssip
 
 # ...and launch WSSiP!
+wssip
+~~~
+
+**yarn**: (Make sure the directory in `yarn global bin` is in your `PATH`)
+
+~~~bash
+# Install WSSiP
+yarn global add wssip
+
+#...and launch!
 wssip
 ~~~
 
@@ -44,7 +54,17 @@ npm start
 # npm run debug
 ~~~
 
-Installing via yarn uses the same commands, just swap `npm` with `yarn` for the above, however make sure that the npm packages folder listed in `yarn global bin` are added to your `PATH`.
+### From Homebrew (macOS Only)
+
+Using Terminal:
+
+~~~bash
+# Install formula
+brew install https://github.com/nccgroup/wssip/blob/master/wssip.rb
+
+# ...and launch WSSiP!
+wssip
+~~~
 
 ### From Packaged Application
 
