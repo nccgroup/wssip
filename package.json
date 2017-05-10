@@ -1,6 +1,6 @@
 {
   "name": "wssip",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Intercepting Proxy Application to capture, modify and send custom data from one WebSocket host to another, primarily for penetration testing. Supports WebSocket RFC6455 implementations and Socket.io.",
   "main": "lib/electron.js",
   "bin": {
@@ -11,7 +11,7 @@
     "web": "node lib/main.js web",
     "debug": "DEBUG=wssip:* electron . --devtools",
     "debug:win": "set DEBUG=wssip:* && electron . --devtools",
-    "compile": "babel src/ -d public/ --presets=tomekf-es2016-node6,react --plugins=transform-async-to-generator,array-includes && babel --presets=node6 --plugins=transform-async-to-generator,array-includes ./mitmengine.js -o ./mitmengine-node6.js",
+    "compile": "babel src/ -d public/ --presets=tomekf-es2016-node6,react --plugins=transform-async-to-generator,array-includes && babel --presets=node6 --plugins=transform-async-to-generator,array-includes ./lib/mitmengine.js -o ./lib/mitmengine-node6.js",
     "compile:watch": "babel src/ -d public/ --presets=tomekf-es2016-node6,react --plugins=transform-async-to-generator,array-includes --watch",
     "build": "npm run compile && electron-forge make",
     "package": "npm run compile && electron-forge package",
