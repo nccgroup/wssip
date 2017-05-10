@@ -80,7 +80,7 @@ In the future, I'll try to rewrite everything to TypeScript.
 
 ### mitmengine.js
 
-There is a custom man-in-the-middle Node.js class that I wrote that is not within the **lib** folder named "mitmengine.js". For any other applications wishing to use this, you can simply do:
+There is a custom man-in-the-middle Node.js class that I wrote that is within the **lib** folder named "mitmengine.js". For any other applications wishing to use this, you can simply do:
 
 ~~~
 const mitmengine = require('wssip/lib/mitmengine');
