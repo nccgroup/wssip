@@ -1,6 +1,6 @@
 {
   "name": "wssip",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "Intercepting Proxy Application to capture, modify and send custom data from one WebSocket host to another, primarily for penetration testing. Supports WebSocket RFC6455 implementations and Socket.io.",
   "main": "lib/electron.js",
   "bin": {
@@ -8,13 +8,25 @@
   },
   "scripts": {
     "start": "electron .",
+    "prepublishOnly": "npm run compile",
     "web": "node lib/main.js web",
-    "debug": "DEBUG=wssip:* electron . --devtools",
+    "debug": "DEBUG=wssip:* electron .",
     "debug:win": "set DEBUG=wssip:* && electron . --devtools",
-    "compile": "babel src/ -d public/ --presets=tomekf-es2016-node6,react --plugins=transform-async-to-generator,array-includes && babel --presets=node6 --plugins=transform-async-to-generator,array-includes ./lib/mitmengine.js -o ./lib/mitmengine-node6.js",
-    "compile:watch": "babel src/ -d public/ --presets=tomekf-es2016-node6,react --plugins=transform-async-to-generator,array-includes --watch",
-    "build": "npm run compile && electron-forge make",
-    "package": "npm run compile && electron-forge package",
+    "debug:full": "npm run compile:dev && DEBUG=wssip:* electron . --devtools",
+    "compile": "NODE_ENV=production webpack --config webpack.config.prod.js",
+    "compile:dev": "NODE_ENV=development webpack --config webpack.config.js",
+    "compile:dev-watch": "NODE_ENV=development webpack --config webpack.config.js --watch",
+    "build": "npm run compile && npm run build:mac && npm run build:linux && npm run build:win",
+    "build:mac": "npm run build:mac-x64",
+    "build:mac-x64": "build -m --x64",
+    "build:linux": "npm run build:linux-x64 && npm run build:linux-ia32 && npm run build:linux-armv71",
+    "build:linux-x64": "build -l --x64",
+    "build:linux-ia32": "build -l --ia32",
+    "build:linux-armv71": "build -l --armv71",
+    "build:win": "npm run build:win-x64 && npm run build:win-ia32 && npm run build:win-armv71",
+    "build:win-x64": "build -w --x64",
+    "build:win-ia32": "build -w --ia32",
+    "build:win-armv71": "build -w --armv71",
     "lint": "npm run lint:src && npm run lint:lib",
     "lint:src": "eslint src",
     "lint:lib": "eslint lib",
@@ -44,16 +56,16 @@
   "license": "AGPL-3.0",
   "dependencies": {
     "bootstrap": "^3.3.7",
-    "conf": "^1.0.0",
-    "electron": "^1.6.8",
-    "electron-compile": "^6.4.1",
+    "conf": "^1.1.0",
+    "electron": "1.7.x",
     "electron-window-state": "^4.1.1",
     "hexy": "^0.2.9",
+    "lodash": "^4.17.4",
     "material-ui": "^0.18.0",
     "node-forge": "^0.7.1",
     "react": "^15.5.4",
     "react-autobind": "^1.0.6",
-    "react-data-grid": "^2.0.33",
+    "react-data-grid": "^2.0.41",
     "react-dom": "^15.5.4",
     "react-tap-event-plugin": "^2.0.1",
     "tunnel-agent": "^0.6.0",
@@ -61,56 +73,65 @@
     "yargs": "^8.0.1"
   },
   "devDependencies": {
-    "babel-cli": "^6.24.1",
-    "babel-plugin-array-includes": "^2.0.3",
-    "babel-plugin-transform-async-to-generator": "^6.24.1",
-    "babel-preset-node6": "^11.0.0",
+    "babel-core": "^6.24.1",
+    "babel-preset-es2015": "^6.24.1",
     "babel-preset-react": "^6.24.1",
-    "babel-preset-tomekf-es2016-node6": "^2.0.6",
     "chai": "^3.5.0",
     "debug": "^2.6.6",
-    "electron-prebuilt-compile": "1.6.8",
+    "electron-builder": "^17.5.0",
     "electron-react-devtools": "^0.4.0",
     "eslint": "^3.19.0",
     "eslint-config-airbnb": "^14.1.0",
     "eslint-plugin-import": "^2.2.0",
-    "eslint-plugin-jsx-a11y": "^5.0.0",
-    "eslint-plugin-react": "^6.10.3",
+    "eslint-plugin-jsx-a11y": "^4.0.0",
+    "eslint-plugin-react": "^6.9.0",
     "mocha": "^3.3.0",
-    "react-scripts": "^0.9.5"
+    "react-scripts": "^0.9.5",
+    "webpack": "^2.5.1"
   },
   "engines": {
-    "node": ">=6.10.0"
+    "node": ">=7.9.0"
   },
-  "config": {
-    "forge": {
-      "make_targets": {
-        "win32": [
-          "squirrel",
-          "zip"
-        ],
-        "darwin": [
-          "dmg"
-        ],
-        "linux": [
-          "deb",
-          "rpm"
-        ]
-      },
-      "electronPackagerConfig": {},
-      "electronWinstallerConfig": {
-        "name": "wssip"
-      },
-      "electronInstallerDebian": {},
-      "electronInstallerRedhat": {},
-      "github_repository": {
-        "owner": "",
-        "name": ""
-      },
-      "windowsStoreConfig": {
-        "packageName": "",
-        "name": "wssip"
-      }
+  "build": {
+    "appId": "com.nccgroup.wssip",
+    "directories": {
+      "buildResources": "./build/staging",
+      "output": "./dist"
+    },
+    "dmg": {},
+    "files": [
+      "app/app.html",
+      "app/app.js",
+      "lib/*.js",
+      "node_modules/**/*",
+      "!node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme,test,__tests__,tests,powered-test,example,examples,*.d.ts}",
+      "LICENSE",
+      "package.json"
+    ],
+    "linux": {
+      "category": "Utility",
+      "icon": "./build/icons/512x512.png",
+      "target": [
+        "deb",
+        "rpm",
+        "zip"
+      ]
+    },
+    "mac": {
+      "category": "public.app-category.utilities",
+      "icon": "./build/icon.icns",
+      "target": [
+        "dmg",
+        "zip"
+      ]
+    },
+    "productName": "WSSiP",
+    "win": {
+      "icon": "./build/icon.ico",
+      "target": [
+        "portable",
+        "zip"
+      ]
     }
   }
 }
