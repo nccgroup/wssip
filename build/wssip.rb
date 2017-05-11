@@ -5,7 +5,7 @@ class Wssip < Formula
   homepage "https://github.com/nccgroup/wssip"
   url "https://registry.npmjs.org/wssip/-/wssip-1.0.6.tgz"
   version "1.0.6"
-  #sha256 ""
+  sha256 "84e3589e2ba8f3e4dfff49421feba770bc21e723526c145300f753b9979a81bd"
   head "https://github.com/nccgroup/wssip.git"
 
   bottle :unneeded
