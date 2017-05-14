@@ -8,7 +8,7 @@ Upstream proxy support also means you can forward HTTP/HTTPS traffic to an inter
 
 There is an outward bridge via HTTP to write a fuzzer in any language you choose to debug and fuzz for security vulnerabilities. This is still in development and I hope to release it ~late May.
 
-Written and maintained by Samantha Chalker (@[thekettu](https://github.com/thekettu)). Icon for WSSiP release provided by @[Dragonfoxing](https://twitter.com/dragonfoxing).
+Written and maintained by Samantha Chalker (@[thekettu](https://github.com/thekettu)). Icon for WSSiP release provided by @[dragonfoxing](https://twitter.com/dragonfoxing).
 
 ## Installation
 
