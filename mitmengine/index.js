@@ -8,32 +8,30 @@ const {connect}       = require('net'),
       os              = require('os'),
       {parse}         = require('url'),
       path            = require('path').join,
-      tls             = require('tls');
+      tls             = require('tls'),
+      pkgVersion      = require(path(__dirname, 'package.json')).version;
 
-let debug = () => () => {},
-    libcurl = null,
-    tunnel = null,
-    pkgVersion = '?',
+let debug, tunnel, libcurl,
     curlEnabled = true;
 
 try {
   debug = require('debug');
-} catch(e) {}
+} catch(e) {
+  debug = () => () => {};
+}
 
 try {
   libcurl = require('node-libcurl').Curl;
 } catch(e) {
+  libcurl = null;
   curlEnabled = false;
 
   try {
     tunnel = require('tunnel-agent');
-  } catch(e) {}
+  } catch(e) {
+    tunnel = null;
+  }
 }
-
-try {
-  let pkgUp = require('find-up').sync('package.json');
-  pkgVersion = require(pkgUp).version;
-} catch(e) {}
 
 //thank you http-mitm-proxy for X.509 signing defaults
 const SSLTLS_EXTENSIONS = [

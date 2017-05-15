@@ -1,0 +1,29 @@
+{
+  "name": "mitmengine",
+  "version": "1.0.7",
+  "description": "ES6 man-in-the-middle class written for WSSiP. Supports proxies, and optionally supports curl (via node-libcurl) for requests.",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nccgroup/wssip.git"
+  },
+  "bugs": {
+    "url": "https://github.com/nccgroup/wssip/issues"
+  },
+  "keywords": [
+    "interceptor",
+    "proxy",
+    "mitm",
+    "http",
+    "https"
+  ],
+  "author": "Samantha Chalker <samantha@chalker.io>",
+  "license": "AGPL-3.0",
+  "dependencies": {
+    "node-forge": "^0.7.1",
+    "tunnel-agent": "^0.6.0"
+  },
+  "engines": {
+    "node": ">=7.6.0"
+  }
+}

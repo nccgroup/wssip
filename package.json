@@ -16,17 +16,7 @@
     "compile": "NODE_ENV=production webpack --config webpack.config.prod.js",
     "compile:dev": "NODE_ENV=development webpack --config webpack.config.js",
     "compile:dev-watch": "NODE_ENV=development webpack --config webpack.config.js --watch",
-    "build": "npm run build:mac && npm run build:linux && npm run build:win",
-    "build:mac": "npm run build:mac-x64",
-    "build:mac-x64": "build -m --x64",
-    "build:linux": "npm run build:linux-x64 && npm run build:linux-ia32 && npm run build:linux-armv71",
-    "build:linux-x64": "build -l --x64",
-    "build:linux-ia32": "build -l --ia32",
-    "build:linux-armv71": "build -l --armv71",
-    "build:win": "npm run build:win-x64 && npm run build:win-ia32 && npm run build:win-armv71",
-    "build:win-x64": "build -w --x64",
-    "build:win-ia32": "build -w --ia32",
-    "build:win-armv71": "build -w --armv71",
+    "build": "build",
     "lint": "npm run lint:src && npm run lint:lib",
     "lint:src": "eslint src",
     "lint:lib": "eslint lib",
@@ -57,11 +47,9 @@
   "dependencies": {
     "bootstrap": "^3.3.7",
     "conf": "^1.1.1",
-    "electron": "1.7.x",
     "electron-window-state": "^4.1.1",
     "hexy": "^0.2.9",
-    "node-forge": "^0.7.1",
-    "tunnel-agent": "^0.6.0",
+    "mitmengine": "1.0.7",
     "ws": "^2.3.1",
     "yargs": "^8.0.1"
   },
@@ -72,6 +60,7 @@
     "chai": "^3.5.0",
     "debug": "^2.6.6",
     "lodash": "^4.17.4",
+    "electron": "1.7.x",
     "electron-builder": "^17.5.0",
     "electron-react-devtools": "^0.4.0",
     "eslint": "^3.19.0",
@@ -81,6 +70,7 @@
     "eslint-plugin-react": "^6.9.0",
     "material-ui": "0.18.x",
     "mocha": "^3.4.1",
+    "node-libcurl": "^1.1.0",
     "react": "15.5.x",
     "react-autobind": "^1.0.6",
     "react-data-grid": "2.0.x",
@@ -88,14 +78,14 @@
     "react-tap-event-plugin": "^2.0.1",
     "webpack": "^2.5.1"
   },
-  "optionalDependencies": {
-    "node-libcurl": "^1.1.0"
-  },
+  "preferGlobal": true,
   "engines": {
     "node": ">=7.9.0"
   },
   "build": {
     "appId": "com.nccgroup.wssip",
+    "artifactName": "wssip-${version}.${ext}",
+    "asar": false,
     "directories": {
       "buildResources": "./build/staging",
       "output": "./dist"
@@ -129,6 +119,9 @@
         "zip"
       ]
     },
+    "nodeGypRebuild": false,
+    "npmArgs": "--production",
+    "npmRebuild": true,
     "productName": "WSSiP",
     "win": {
       "icon": "./build/icon.ico",
