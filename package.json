@@ -16,7 +16,7 @@
     "compile": "NODE_ENV=production webpack --config webpack.config.prod.js",
     "compile:dev": "NODE_ENV=development webpack --config webpack.config.js",
     "compile:dev-watch": "NODE_ENV=development webpack --config webpack.config.js --watch",
-    "build": "npm run compile && npm run build:mac && npm run build:linux && npm run build:win",
+    "build": "npm run build:mac && npm run build:linux && npm run build:win",
     "build:mac": "npm run build:mac-x64",
     "build:mac-x64": "build -m --x64",
     "build:linux": "npm run build:linux-x64 && npm run build:linux-ia32 && npm run build:linux-armv71",
@@ -104,6 +104,9 @@
     "files": [
       "app/app.html",
       "app/app.js",
+      "build/icon.ico",
+      "build/icon.icns",
+      "build/icons/*",
       "lib/*.js",
       "node_modules/**/*",
       "!node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme,test,__tests__,tests,powered-test,example,examples,*.d.ts}",
@@ -112,9 +115,8 @@
     ],
     "linux": {
       "category": "Utility",
-      "icon": "./build/icons/512x512.png",
+      "icon": "./build/icons",
       "target": [
-        "deb",
         "rpm",
         "zip"
       ]
