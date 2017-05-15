@@ -6,7 +6,7 @@ Short for "WebSocket/Socket.io Proxy", this tool, written in Node.js, provides a
 
 Upstream proxy support also means you can forward HTTP/HTTPS traffic to an intercepting proxy of your choice (e.g. Burp Suite or Pappy Proxy) but view WebSocket traffic in WSSiP. More information can be found on the blog post.
 
-There is an outward bridge via HTTP to write a fuzzer in any language you choose to debug and fuzz for security vulnerabilities. This is still in development and I hope to release it ~late May.
+There is an outward bridge via HTTP to write a fuzzer in any language you choose to debug and fuzz for security vulnerabilities. See [Fuzzing](#fuzzing) for more details.
 
 Written and maintained by Samantha Chalker (@[thekettu](https://github.com/thekettu)). Icon for WSSiP release provided by @[dragonfoxing](https://twitter.com/dragonfoxing).
 
@@ -54,10 +54,10 @@ git clone https://github.com/nccgroup/wssip
 # Change to the directory
 cd wssip
 
-# If development:
+# If you are developing for WSSiP:
 # npm i
 
-# If not for developing WSSiP (as to minimize disk space):
+# If not... (as to minimize disk space):
 npm i -g electron
 npm i --production
 
@@ -114,7 +114,7 @@ Send WebSocket data.
 
 * **URL**
 
-  POST http://mitm/ws/:id/:sender/:mode/:type?log=:log
+  POST http://mitm/ws/:id/:sender/:mode/:type?log=:log&mask=:mask
 
 * **URL Params**
 
@@ -156,7 +156,7 @@ Pull requests are welcomed and encouraged. WSSiP supports the `debug` npm packag
 There are two commands depending on how you want to compile the Webpack bundle: for development, that is `npm run compile:dev` and for production is `npm run compile`. React will also log errors depending on whether development or production is specified.
 
 Currently working on:
-* Exposed API for external scripts for fuzzing (99% complete, need to test sending data)
+* Exposed API for external scripts for fuzzing (99% complete, it is live but need to test more data)
 * Saving/Resuming Connections from File (35% complete, exporting works sans active connections)
 * Using WSSiP in browser without Electron (likely 1.1.0)
 * Rewrite in TypeScript (likely 1.2.0)
