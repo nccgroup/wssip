@@ -1,6 +1,6 @@
 {
   "name": "wssip",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "Intercepting Proxy Application to capture, modify and send custom data from one WebSocket host to another, primarily for penetration testing. Supports WebSocket RFC6455 implementations and Socket.io.",
   "main": "lib/electron.js",
   "bin": {
@@ -17,6 +17,9 @@
     "compile:dev": "NODE_ENV=development webpack --config webpack.config.js",
     "compile:dev-watch": "NODE_ENV=development webpack --config webpack.config.js --watch",
     "build": "build",
+    "build:mac": "build -m",
+    "build:win32": "build -w",
+    "build:linux": "build -l",
     "lint": "npm run lint:src && npm run lint:lib",
     "lint:src": "eslint src",
     "lint:lib": "eslint lib",
@@ -86,7 +89,6 @@
   "build": {
     "appId": "com.nccgroup.wssip",
     "artifactName": "wssip-${version}.${ext}",
-    "asar": false,
     "directories": {
       "buildResources": "./build/staging",
       "output": "./dist"
