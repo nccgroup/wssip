@@ -49,7 +49,7 @@
     "conf": "^1.1.1",
     "electron-window-state": "^4.1.1",
     "hexy": "^0.2.9",
-    "mitmengine": "1.0.7",
+    "mitmengine": "1.1.0",
     "ws": "^2.3.1",
     "yargs": "^8.0.1"
   },

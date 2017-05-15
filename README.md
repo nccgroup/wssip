@@ -41,7 +41,7 @@ yarn global add wssip
 wssip
 ~~~
 
-You can also run `npm install electron` (or `yarn add electron` if using yarn) inside the installed WSSiP directory if you do not want to install Electron globally, as the app packager requires Electron be added to developer dependencies.
+You can also run `npm install electron` (or `yarn add electron`) inside the installed WSSiP directory if you do not want to install Electron globally, as the app packager requires Electron be added to developer dependencies.
 
 ### From Source
 
@@ -75,11 +75,79 @@ npm start
 6. ???
 7. Potato.
 
-## Fuzzing (Work In Progress)
+## Fuzzing
 
-WSSiP provides an HTTP bridge via the man-in-the-middle proxy for custom applications to help fuzz a connection.
+WSSiP provides an HTTP bridge via the man-in-the-middle proxy for custom applications to help fuzz a connection. These are accessed over the proxy server.
 
-This module is still under development.
+A few of the simple CA certificate downloads are:
+
+* http://mitm/ca.pem / http://mitm/ca.der (Download CA Certificate)
+* http://mitm/ca_pri.pem / http://mitm/ca_pri.der (Download Private Key)
+* http://mitm/ca_pub.pem / http://mitm/ca_pub.der (Download Public Key)
+
+**Get WebSocket Connection Info**
+----
+Returns whether the WebSocket id is connected to a web server, and if so, return information.
+
+* **URL**
+
+    GET http://mitm/ws/:id
+
+* **URL Params**
+
+  `id=[integer]`
+
+* **Success Response (Not Connected)**
+
+  * **Code:** 200 <br />
+    **Content:** `{connected: false}`
+
+
+* **Success Response (Connected)**
+
+  * **Code**: 200 <br />
+    **Content:** `{connected: true, url: 'ws://echo.websocket.org', bytesReceived: 0, extensions: {}, readyState: 3, protocol: '', protocolVersion: 13}`
+
+**Send WebSocket Data**
+----
+Send WebSocket data.
+
+* **URL**
+
+  POST http://mitm/ws/:id/:sender/:mode/:type?log=:log
+
+* **URL Params**
+
+  **Required:**
+
+  `id=[integer]`
+
+  `sender` one of `client` or `server`
+
+  `mode` one of `message`, `ping` or `pong`
+
+  `type` one of `ascii` or `binary` (`text` is an alias of `ascii`)
+
+  **Optional:**
+
+  `log` either `true` or `y` to log in the WSSiP application. Errors will be logged in the WSSiP application instead of being returned via the REST API.
+
+  `mask` either `true` or `y` to set WebSocket flag to mask.
+
+* **Data Params**
+
+  Raw data in the POST field will be sent to the WebSocket server.
+
+* **Success Response:**
+
+  * **Code:** 200 <br />
+    **Content:** `{success: true}`
+
+
+* **Error Response:**
+
+  * **Code:** 500 <br />
+    **Content:** `{success: false, reason: 'Error message'}`
 
 ## Development
 
@@ -88,10 +156,10 @@ Pull requests are welcomed and encouraged. WSSiP supports the `debug` npm packag
 There are two commands depending on how you want to compile the Webpack bundle: for development, that is `npm run compile:dev` and for production is `npm run compile`. React will also log errors depending on whether development or production is specified.
 
 Currently working on:
-* Exposed API for external scripts for fuzzing (working on now, see above)
-* Saving/Resuming Connections from File
-* Using WSSiP in browser without Electron
+* Exposed API for external scripts for fuzzing (99% complete, need to test sending data)
+* Saving/Resuming Connections from File (35% complete, exporting works sans active connections)
+* Using WSSiP in browser without Electron (likely 1.1.0)
+* Rewrite in TypeScript (likely 1.2.0)
 * Using something other than Appbar for Custom/Intercept tabs, and styling the options to center better
-* Rewrite in TypeScript
 
-For information on using the `mitmengine` class, see [mitmengine/README.md](https://github.com/nccgroup/wssip/mitmengine/README.md)
+For information on using the `mitmengine` class, see either: [npm](https://npmjs.com/package/mitmengine), [yarn](https://yarnpkg.com/en/package/mitmengine), or [mitmengine/README.md](https://github.com/nccgroup/wssip/mitmengine/README.md)

@@ -874,10 +874,10 @@ module.exports = class mitmengine extends EventEmitter {
       clientRequest.on('end', () => {
         let data = _size !== 0 ? Buffer.concat(_buf, _size).toString('utf8') : '';
 
-        clientRequest.resume();
         this.requestHandler(clientRequest, clientResponse, data);
       });
 
+      clientRequest.resume();
       return;
     }
 
