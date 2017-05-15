@@ -119,8 +119,7 @@ To use the class, possible options and functions include:
 - `options` {Object}
    - `hostname` {String} Hostname of the listening proxy. Default is `localhost`.
    - `port` {Number} Port number of the listening proxy. 0-65535. The number 0 will result in Node.js finding a free port to listen on and set instance.port to that value. Default is `0`.
-   - `name` {String} If another application is using this and wants to modify the User-Agent, enter in the name here. User Agent is "name/version". Default is `wssip_mitmengine`.
-   - `version` {String} Same as above, for version. Default is based on nearest package.json version if "find-up" is installed, followed by `?`.
+   - `uaId` {String} If another application is using this and wants to modify the User-Agent, enter in the identifier here. User Agent is "name/version". If find-up is installed, defaults to `wssip_mitmengine/x.x.x` where x.x.x is the nearest package version from package.json, otherwise defaults to `wssip_mitmengine/?`.
    - `debugName` {String} If "debug" package is installed, use this identifier to debug. Default is "mitmengine". WSSiP sets this to `wssip:mitmengine`.
    - `useCurl` {Boolean} Disable curl even if node-libcurl is installed, or force curl enable. Not recommended to change. Default is `false`.
    - `useUpstreamProxy` {Boolean} Use an upstream proxy for all requests. For attaching processes, does not take effect on UPGRADE or CONNECT requests. Does not enable even if set to `true` if neither `node-libcurl` nor `tunnel-agent` is installed. Default is `false`.
@@ -134,7 +133,7 @@ To use the class, possible options and functions include:
    - `tlsDefaultExtensions` {Object} node-forge specific default extensions.
    - `tlsDefaultServerExtensions` {Object} node-forge specific server default extensions.
    - `tlsDefaultIssuer` {Object} node-forge specific issuer object.
-   - `eraseConnectionHeader` {Boolean} Rename "Connection: close" to "Connection: \_" Default is `false`
+   - `eraseConnectionHeader` {Boolean} Rename "Connection: close" to "Connection: \_". For web servers that react oddly to Connection: close headers. Default is `false`
    - `onRequestCurl` {Function} Callback function for modifying request information, e.g. headers. Curl only.
       - `queuePosition` {Number} Position in queue relative to other requests.
       - `method` {String} HTTP/S method.
