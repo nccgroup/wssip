@@ -58,18 +58,6 @@ npm start
 # npm run debug
 ~~~
 
-### From Homebrew (macOS Only)
-
-Using Terminal:
-
-~~~bash
-# Install formula
-brew install https://raw.githubusercontent.com/nccgroup/wssip/master/build/wssip.rb
-
-# ...and launch WSSiP!
-wssip
-~~~
-
 ### From Packaged Application
 
 See [Releases](https://github.com/nccgroup/wssip/releases).
