@@ -1,6 +1,6 @@
 {
   "name": "wssip",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "Intercepting Proxy Application to capture, modify and send custom data from one WebSocket host to another, primarily for penetration testing. Supports WebSocket RFC6455 implementations and Socket.io.",
   "main": "lib/electron.js",
   "bin": {
