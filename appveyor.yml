@@ -1,0 +1,28 @@
+environment:
+  matrix:
+    - nodejs_version: 7
+
+platform:
+  - x86
+  - x64
+
+clone_depth: 5
+
+cache:
+  - node_modules
+  - '%USERPROFILE%\.electron'
+  - '%USERPROFILE%\.cache'
+
+install:
+  - ps: Update-NodeJsInstallation (Get-NodeJsLatestBuild $env:nodejs_version) $env:Platform
+  - node --version
+  - SET CI=true
+  - SET PATH=%cd%\node_modules\.bin;%PATH%
+  - yarn install
+
+build_script:
+  - yarn run build
+
+test: off
+
+version: "{build}"
