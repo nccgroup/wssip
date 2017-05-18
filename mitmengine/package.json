@@ -1,7 +1,7 @@
 {
   "name": "mitmengine",
-  "version": "1.1.0",
-  "description": "ES6 man-in-the-middle class written for WSSiP. Supports proxies, and optionally supports curl (via node-libcurl) for requests.",
+  "version": "1.2.0",
+  "description": "Man-in-the-Middle Proxy written for WSSiP. Supports upstream proxies, and optionally supports curl (via node-libcurl) for requests.",
   "main": "index.js",
   "repository": {
     "type": "git",

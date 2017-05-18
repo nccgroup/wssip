@@ -1,6 +1,6 @@
 # mitmengine
 
-ES6 Man-in-the-middle class written for [WSSiP](https://npmjs.com/package/wssip). Only requires `node-forge` for X509 signing, and optionally requires `debug` (for debugging), `node-libcurl` and/or `tunnel-agent` (for upstream services).
+Man-in-the-middle class written for [WSSiP](https://npmjs.com/package/wssip). Only requires `node-forge` for X509 signing, and optionally requires `debug` (for debugging), `node-libcurl` and/or `tunnel-agent` (for upstream services).
 
 ## Example
 
@@ -15,15 +15,20 @@ let mitmInstance = new mitmengine({
 mitmInstance.listen();
 ~~~
 
-mitmengine will use `http.request()` and `https.request()` to retrieve data from web servers as a part of the man-in-the-middle component, but if `node-libcurl` is installed via npm/yarn either globally or in the working directory, it will use that module instead. In testing, some web servers have unexpectedly terminated their connections while using the `.request()` function, but will not terminate using curl to fetch a web page. SOCKS4/5 proxies are also supported by curl. As a result, some users may opt to use curl instead.
+mitmengine will by default use `http.request()` and `https.request()` to retrieve data from web servers as a part of one of the components. If `node-libcurl` is installed, `useCurl` will by default be set to `true` but you can set this to `false`. `node-libcurl` support is there as an alternative for requesting pages as some web servers react oddly to .request() calls for some odd reason.
 
 To use the class, possible options and functions include:
 
 ### new mitmengine([options])
 
+Create a new instance and call `mitmengine.setOptions(options)`.
+
+### mitmengine.setOptions([options])
+
 - `options` {Object}
    - `hostname` {String} Hostname of the listening proxy. Default is `localhost`.
    - `port` {Number} Port number of the listening proxy. 0-65535. The number 0 will result in Node.js finding a free port to listen on and set instance.port to that value. Default is `0`.
+   - `useHTTPS` {Boolean} Intercepting proxy should listen over HTTPS instead of HTTP. Default is `false`.
    - `uaId` {String} If another application is using this and wants to modify the User-Agent, enter in the identifier here. User Agent is "name/version". If find-up is installed, defaults to `wssip_mitmengine/x.x.x` where x.x.x is the nearest package version from package.json, otherwise defaults to `wssip_mitmengine/?`.
    - `debugName` {String} If "debug" package is installed, use this identifier to debug. Default is "mitmengine". WSSiP sets this to `wssip:mitmengine`.
    - `useCurl` {Boolean} Disable curl even if node-libcurl is installed, or force curl enable. Not recommended to change. Default is `false`.
@@ -78,6 +83,34 @@ To use the class, possible options and functions include:
       - `certificate` {Object} Certificate information.
       - `privateKey` {Object} Private key object.
       - `signingKey` {Object} Root CA private key used to sign the server certificate.
+
+Set intercepting proxy server options.
+
+### mitmengine.setProxyTimeout(seconds)
+
+- `seconds` {Number}
+
+Number of seconds to set for a timeout on page load and server requests.
+
+### mitmengine.listenSync([newRootCertificate])
+
+- `newRootCertificate` {Boolean} Reset all master keys. In the future, this will delete subkeys as well. Default is false.
+
+Synchronous version of `mitmengine.listen()`.
+
+### mitmengine.listen([newRootCertificate])
+
+- `newRootCertificate` {Boolean} Reset all master keys. In the future, this will delete subkeys as well. Default is false.
+
+Begin accepting connections on the specified port and hostname. Returns a Promise and sends a resolve when the server is listening, and reject when there is an error.
+
+### mitmengine.endSync()
+
+Synchronous version of `mitmengine.end()`.
+
+### mitmengine.end()
+
+End all connections to the intercepting proxy and all sub-servers. Returns a Promise and sends a resolve when all connections are closed, and reject when there is an error closing.
 
 ### Event: 'new_root_certificate'
 
@@ -181,6 +214,8 @@ Emitted when a HTTP/S requests comes in via the proxy and does the request via h
 
 ### Event: 'error'
 
+- `where` {String}
+- `code` {String}
 - `error` {Error}
 
 Emitted when an error is thrown.

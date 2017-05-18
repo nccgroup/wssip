@@ -1,6 +1,6 @@
 {
   "name": "wssip",
-  "version": "1.0.9",
+  "version": "1.0.10",
   "description": "Intercepting Proxy Application to capture, modify and send custom data from one WebSocket host to another, primarily for penetration testing. Supports WebSocket RFC6455 implementations and Socket.io.",
   "main": "lib/electron.js",
   "bin": {
@@ -52,7 +52,7 @@
     "conf": "^1.1.1",
     "electron-window-state": "^4.1.1",
     "hexy": "^0.2.9",
-    "mitmengine": "1.1.0",
+    "mitmengine": "1.2.0",
     "ws": "^2.3.1",
     "yargs": "^8.0.1"
   },
@@ -93,7 +93,20 @@
       "buildResources": "./build/staging",
       "output": "./dist"
     },
-    "dmg": {},
+    "dmg": {
+      "contents": [
+        {
+          "x": 100,
+          "y": 200
+        },
+        {
+          "x": 410,
+          "y": 220,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ]
+    },
     "files": [
       "app/app.html",
       "app/app.js",
@@ -110,6 +123,8 @@
       "category": "Utility",
       "icon": "./build/icons",
       "target": [
+        "AppImage",
+        "deb",
         "rpm",
         "zip"
       ]
@@ -129,7 +144,7 @@
     "win": {
       "icon": "./build/icon.ico",
       "target": [
-        "portable",
+        "nsis",
         "zip"
       ]
     }

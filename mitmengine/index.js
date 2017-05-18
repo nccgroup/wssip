@@ -1,3 +1,8 @@
+/*
+  Credit to https://github.com/joeferner/node-http-mitm-proxy
+  for a lot of the base structure, CONNECT handling, X509 signing, etc.
+*/
+
 const {connect}       = require('net'),
       crypto          = require('crypto'),
       {EventEmitter}  = require('events'),
@@ -129,48 +134,60 @@ const SSLTLS_ISSUER = [
 
 module.exports = class mitmengine extends EventEmitter {
 
-  constructor(options={}) {
+  constructor (options = {}, createTempDir = true) {
     super();
+    this.setOptions(options);
+
+    if (createTempDir) {
+      this._makeNewTempDir()
+        .then(() => {})
+        .catch(e => {});
+      //auto-handle by error event
+    }
+  }
+
+  setOptions (options = {}) {
 
     options = Object.assign({
-      hostname: 'localhost',
-      port: 0,
+      hostname: this.hostname || 'localhost',
+      port: this.port || 0,
+      useHTTPS: this.useHTTPS || false,
 
-      uaId: `wssip_mitmengine/${pkgVersion}`,
-      debugName: 'mitmengine',
-      useCurl: curlEnabled,
+      uaId: this.uaId || `wssip_mitmengine/${pkgVersion}`,
+      debugName: this.debugName || 'mitmengine',
+      useCurl: this.useCurl || curlEnabled,
 
-      useUpstreamProxy: false,
-      proxyUrl: '',
+      useUpstreamProxy: this.useUpstreamProxy || false,
+      proxyUrl: this.proxyUrl || '',
 
-      timeout: 0,
-      rejectUnauthorized: false,
-      tmpDir: path(os.tmpdir(), '.mitm-cache'),
+      timeout: this.timeout || 0,
+      rejectUnauthorized: this.rejectUnauthorized || false,
+      tmpDir: this.tmpDir || path(os.tmpdir(), '.mitm-cache'),
 
-      requestHandler: false,
+      requestHandler: this.requestHandler || false,
 
-      tlsDefaultExtensions: SSLTLS_EXTENSIONS,
-      tlsDefaultServerExtensions: SSLTLS_SERVER_EXTENSIONS,
-      tlsDefaultIssuer: SSLTLS_ISSUER,
+      tlsDefaultExtensions: this.tlsDefaultExtensions || SSLTLS_EXTENSIONS,
+      tlsDefaultServerExtensions: this.tlsDefaultServerExtensions || SSLTLS_SERVER_EXTENSIONS,
+      tlsDefaultIssuer: this.tlsDefaultIssuer || SSLTLS_ISSUER,
 
-      eraseConnectionHeader: false,
+      eraseConnectionHeader: this.eraseConnectionHeader || false,
 
-      onRequestCurl: false,
-      onRequestNode: false,
-      onRequestData: false,
-      onRequestEnd: false,
-      onResponseHeaders: false,
-      onResponseData: false,
-      onResponseEnd: false,
-      onUpgrade: false,
-      onRootCAGeneration: false,
-      onServerKeyGeneration: false
+      onRequestCurl: this.onRequestCurl || false,
+      onRequestNode: this.onRequestNode || false,
+      onRequestData: this.onRequestData || false,
+      onRequestEnd: this.onRequestEnd || false,
+      onResponseHeaders: this.onResponseHeaders || false,
+      onResponseData: this.onResponseData || false,
+      onResponseEnd: this.onResponseEnd || false,
+      onUpgrade: this.onUpgrade || false,
+      onRootCAGeneration: this.onRootCAGeneration || false,
+      onServerKeyGeneration: this.onServerKeyGeneration || false
     }, options);
-
-    this._proxy = http.createServer();
 
     this.hostname = options.hostname;
     this.port = options.port;
+    this.useHTTPS = options.useHTTPS;
+
     this.useUpstreamProxy = options.useUpstreamProxy;
     this.proxyUrl = options.proxyUrl;
     this.timeout = options.timeout;
@@ -184,7 +201,8 @@ module.exports = class mitmengine extends EventEmitter {
     this.tlsServerExtensions = options.tlsDefaultServerExtensions;
     this.tlsIssuer = options.tlsDefaultIssuer;
 
-    this.debug = debug(options.debugName);
+    this.debugName = options.debugName;
+    this.debug = debug(this.debugName);
 
     this._cachedHostsHash = {};
     this._cachedServersList = {};
@@ -192,19 +210,6 @@ module.exports = class mitmengine extends EventEmitter {
 
     this.listening = false;
     this.requestQueue = 0;
-
-    this.onConnect = this.onConnect.bind(this);
-    this.onRequest = this.onRequest.bind(this);
-    this.onError = this.onError.bind(this);
-
-    this._proxy.on('connect', this.onConnect);
-    this._proxy.on('request', this.onRequest);
-    this._proxy.on('error', this.onError);
-
-    this._proxy.on('clientError', (err, socket) => {
-      this.onError(err);
-      socket.end(this._writeErrorPage(err));
-    });
 
     this.onRequestCurl = options.onRequestCurl;
     this.onRequestNode = options.onRequestNode;
@@ -220,29 +225,13 @@ module.exports = class mitmengine extends EventEmitter {
     this.onRootCAGeneration = options.onRootCAGeneration;
     this.onServerKeyGeneration = options.onServerKeyGeneration;
 
-    if (!this.useCurl) {
-      if (tunnel !== null) {
-        this.debug(`node-libcurl is not installed. Defaulting back to Node.`);
-        this.debug(`HTTP/S upstream proxy requests will work, but SOCKS4/5 proxy will not.`);
-      } else {
-        this.debug(`Warning: node-libcurl isn't installed and neither is tunnel-agent.`);
-        this.debug(`Be advised that upstream proxy requests will not work as a result.`);
-      }
+    return true;
+  }
+
+  setProxyTimeout(seconds) {
+    if(typeof this._proxy !== 'undefined' && this._proxy != null) {
+      this._proxy.timeout = seconds;
     }
-
-    this._makeNewTempDir();
-  }
-
-  connectionIsHttps(req, socket, head) {
-    return head.length === 0 || head[0] == 0x80 || head[0] == 0x00;
-  }
-
-  get timeout() {
-    return this._proxy.timeout;
-  }
-
-  set timeout(seconds) {
-    this._proxy.timeout = seconds;
   }
 
   _fixRequestUrl(requrl, newurl) {
@@ -281,81 +270,85 @@ module.exports = class mitmengine extends EventEmitter {
   }
 
   _makeNewTempDir() {
-    try {
-      fs.accessSync(this.tmpDir, fs.constants.R_OK);
-    } catch(err) {
-      this.debug(err);
-
-      if(err.code === 'ENOENT') {
-        try {
-          fs.mkdirSync(this.tmpDir);
-          fs.chmodSync(this.tmpDir, '766');
-        } catch(error) {
-          this.onError(error);
-          return;
+    return new Promise((resolve, reject) => {
+      fs.access(this.tmpDir, fs.constants.R_OK | fs.constants.W_OK , accessError => {
+        if(accessError) {
+          if(accessError.code === 'ENOENT' && makeIfNotExists) {
+            fs.mkdir(this.tmpDir, 0o766, mkdirError => {
+              if(mkdirError) {
+                this.onError('mitmengine#_makeNewTempDir', 'MKDIR_FAIL', mkdirError);
+                reject(mkdirError);
+              } else {
+                fs.access(this.tmpDir, fs.constants.W_OK, writeError => {
+                  if(writeError) {
+                    this.onError('mitmengine#_makeNewTempDir', 'WRITE_ERROR', writeError);
+                    reject(writeError);
+                  } else {
+                    resolve(true);
+                  }
+                });
+              }
+            });
+          } else {
+            this.onError('mitmengine#_makeNewTempDir', 'ACCESS_FAIL', accessError);
+            reject(accessError);
+          }
+        } else {
+          resolve(true);
         }
-
-        try {
-          fs.accessSync(this.tmpDir, fs.constants.W_OK);
-        } catch(error) {
-          this.onError(error);
-        }
-      } else {
-        this.onError(err);
-      }
-    }
+      });
+    });
   }
 
-  cacheNewCA(deleteExisting) {
+  _cacheMasterKeys() {
     return new Promise((resolve, reject) => {
       let tmpRootCAPEM = path(this.tmpDir, 'ca.pem');
       let expiration = 0;
 
-      try {
-        expiration = fs.statSync(tmpRootCAPEM).mtime;
-        expiration.setFullYear(expiration.getFullYear() + 2);
-      } catch(e) {}
-
-      if (deleteExisting) {
-        try {
-          fs.unlinkSync(this.tmpDir);
-          this._makeNewTempDir();
-        } catch(e) {
-          reject(e);
+      fs.stat(tmpRootCAPEM, (err, stats) => {
+        if(err && err.code !== 'ENOENT') {
+          this.onError('mitmengine#_cacheMasterKeys', 'STAT_CAPEM_ERROR', err);
+          reject(err);
           return;
         }
-      }
 
-      if (!fs.existsSync(tmpRootCAPEM) || expiration.getTime() <= new Date().getTime()) {
-        forge.pki.rsa.generateKeyPair({bits: 2048}, (err, keys) => {
-          if (err) {
-            reject(err);
-            return;
-          }
+        let expiration = 0;
 
-          let certificate = forge.pki.createCertificate();
-          let {privateKey} = keys;
+        if(!err) {
+          expiration = stats.mtime;
+          expiration.setFullYear(expiration.getFullYear() + 2);
+        }
 
-          certificate.publicKey = keys.publicKey;
-          certificate.serialNumber = crypto.randomBytes(8).toString('hex');
-          certificate.validity.notBefore = new Date();
-          certificate.validity.notAfter = new Date();
-          certificate.validity.notAfter.setFullYear(certificate.validity.notAfter.getFullYear() + 2);
-
-          certificate.setSubject(this.tlsIssuer);
-          certificate.setIssuer(this.tlsIssuer);
-          certificate.setExtensions(this.tlsExtensions);
-
-          if(this.onRootCAGeneration) {
-            let rootCACallback = this.onRootCAGeneration(certificate, privateKey);
-
-            if(typeof rootCACallback === 'object') {
-              certificate = typeof rootCACallback.certificate !== 'undefined' ? rootCACallback.certificate : certificate;
-              privateKey = typeof rootCACallback.privateKey !== 'undefined' ? rootCACallback.privateKey : privateKey;
+        if (expiration === 0 || expiration.getTime() <= new Date().getTime()) {
+          forge.pki.rsa.generateKeyPair({bits: 2048}, (err, keys) => {
+            if (err) {
+              this.onError('mitmengine#_cacheMasterKeys', 'KEY_GENERATION_FAIL', err);
+              reject(err);
+              return;
             }
-          }
 
-          try {
+            let certificate = forge.pki.createCertificate();
+            let {privateKey} = keys;
+
+            certificate.publicKey = keys.publicKey;
+            certificate.serialNumber = crypto.randomBytes(8).toString('hex').toUpperCase();
+            certificate.validity.notBefore = new Date();
+            certificate.validity.notAfter = new Date();
+            certificate.validity.notAfter.setFullYear(certificate.validity.notAfter.getFullYear() + 2);
+
+            certificate.setSubject(this.tlsIssuer);
+            certificate.setIssuer(this.tlsIssuer);
+            certificate.setExtensions(this.tlsExtensions);
+
+            if(this.onRootCAGeneration) {
+              let rootCACallback = this.onRootCAGeneration(certificate, privateKey);
+
+              if(typeof rootCACallback === 'object') {
+                certificate = typeof rootCACallback.certificate !== 'undefined' ? rootCACallback.certificate : certificate;
+                privateKey = typeof rootCACallback.privateKey !== 'undefined' ? rootCACallback.privateKey : privateKey;
+              }
+            }
+
             certificate.sign(privateKey, forge.md.sha256.create());
 
             let certPEM = forge.pki.certificateToPem(certificate);
@@ -364,32 +357,47 @@ module.exports = class mitmengine extends EventEmitter {
 
             this.emit('new_root_certificate', certPEM, privateKeyPEM, publicKeyPEM);
 
-            fs.writeFileSync(path(this.tmpDir, 'ca.pem'), certPEM);
-            fs.writeFileSync(path(this.tmpDir, 'ca_pri.pem'), privateKeyPEM);
-            fs.writeFileSync(path(this.tmpDir, 'ca_pub.pem'), publicKeyPEM);
-          } catch(e) {
-            reject(e);
-            return;
-          }
+            let writeOpt = {
+              encoding: 'utf8',
+              mode: 0o766,
+              flag: 'w'
+            }
 
-          this.debug('ROOTCA: [none]');
-          this._cachedPrivateKey = privateKey;
+            fs.writeFile(path(this.tmpDir, 'ca.pem'), certPEM, writeOpt, write1Err => {
+              if(write1Err) {
+                this.onError('mitmengine#_cacheMasterKeys', 'WRITE_CAPEM_FAIL', write1Err);
+                reject(write1Err);
+              } else {
+                fs.writeFile(path(this.tmpDir, 'ca_pri.pem'), privateKeyPEM, writeOpt, write2Err => {
+                  if(write2Err) {
+                    this.onError('mitmengine#_cacheMasterKeys', 'WRITE_CAPRIPEM_FAIL', write2Err);
+                    reject(write2Err);
+                  } else {
+                    fs.writeFile(path(this.tmpDir, 'ca_pub.pem'), publicKeyPEM, writeOpt, write3Err => {
+                      if(write3Err) {
+                        this.onError('mitmengine#_cacheMasterKeys', 'WRITE_CAPUB_FAIL', write3Err);
+                        reject(write3Err);
+                      } else {
+                        resolve(privateKeyPEM);
+                      }
+                    });
+                  }
+                });
+              }
+            });
+          });
+        } else {
+          fs.readFile(path(this.tmpDir, 'ca_pri.pem'), { encoding: 'utf8', flag: 'r' }, (err, data) => {
+            if(err) {
+              this.onError('mitmengine#_cacheMasterKeys', 'READ_CAPEM_FAIL', err);
+              reject(err);
+              return;
+            }
 
-          resolve(this._cachedPrivateKey);
-        });
-      } else {
-        try {
-          let privKey = path(this.tmpDir, 'ca_pri.pem');
-
-          this.debug(`ROOTCA: ${privKey}`);
-          this._cachedPrivateKey = forge.pki.privateKeyFromPem(fs.readFileSync(privKey));
-        } catch(e) {
-          reject(e);
-          return;
+            resolve(data);
+          });
         }
-
-        resolve(this._cachedPrivateKey);
-      }
+      });
     });
   }
 
@@ -436,6 +444,7 @@ module.exports = class mitmengine extends EventEmitter {
     return new Promise((resolve, reject) => {
       forge.pki.rsa.generateKeyPair({bits: 1024}, (err, keys) => {
         if (err) {
+          this.onError('mitmengine#_generateServerKeys', 'KEY_GENERATION_FAIL', err);
           reject(err);
           return;
         }
@@ -519,91 +528,140 @@ module.exports = class mitmengine extends EventEmitter {
           }
         }
 
-        try {
-          certificate.sign(signingKey, forge.md.sha256.create());
+        certificate.sign(signingKey, forge.md.sha256.create());
 
-          let certPEM = forge.pki.certificateToPem(certificate);
-          let privateKeyPEM = forge.pki.privateKeyToPem(privateKey);
-          let publicKeyPEM = forge.pki.publicKeyToPem(keys.publicKey);
+        let certPEM = forge.pki.certificateToPem(certificate);
+        let privateKeyPEM = forge.pki.privateKeyToPem(privateKey);
+        let publicKeyPEM = forge.pki.publicKeyToPem(keys.publicKey);
 
-          this.emit('new_server_keys', hostIdentifier, certPEM, privateKeyPEM, publicKeyPEM);
+        this.emit('new_server_keys', hostIdentifier, certPEM, privateKeyPEM, publicKeyPEM);
 
-          fs.writeFileSync(path(this.tmpDir, this._cachedHostsHash[hostIdentifier] + '.pem'), certPEM);
-          fs.writeFileSync(path(this.tmpDir, this._cachedHostsHash[hostIdentifier] + '_pri.pem'), privateKeyPEM);
-          fs.writeFileSync(path(this.tmpDir, this._cachedHostsHash[hostIdentifier] + '_pub.pem'), publicKeyPEM);
-        } catch(e) {
-          reject(e);
-          return;
-        }
-
-        resolve(true);
+        fs.writeFile(path(this.tmpDir, this._cachedHostsHash[hostIdentifier] + '.pem'), certPEM, write1Err => {
+          if(write1Err) {
+            this.onError('mitmengine#_generateServerKeys', 'WRITE_CAPEM_FAIL', write1Err);
+            reject(write1Err);
+          } else {
+            fs.writeFile(path(this.tmpDir, this._cachedHostsHash[hostIdentifier] + '_pri.pem'), privateKeyPEM, write2Err => {
+              if(write2Err) {
+                this.onError('mitmengine#_generateServerKeys', 'WRITE_CAPRIPEM_FAIL', write2Err);
+                reject(write3Err);
+              } else {
+                fs.writeFile(path(this.tmpDir, this._cachedHostsHash[hostIdentifier] + '_pub.pem'), publicKeyPEM, write3Err => {
+                  if(write3Err) {
+                    this.onError('mitmengine#_generateServerKeys', 'WRITE_CAPUBPEM_FAIL', write3Err);
+                    reject(write3Err);
+                  } else {
+                    resolve(true);
+                  }
+                });
+              }
+            });
+          }
+        });
       });
     });
   }
 
-  _getHTTPSCertificate(serverUrl) {
-    return new Promise((resolve, reject) => {
-      let expiration = 0;
-      let hostIdentifier = `${serverUrl.hostname}:${serverUrl.port}`;
-      let pemPath = path(this.tmpDir, this._cachedHostsHash[hostIdentifier] + '.pem');
+  _serverCertFilesExist(identifier) {
+    return Promise.all([
+      new Promise((resolve, reject) => {
+        fs.stat(path(this.tmpDir, `${identifier}.pem`), (err, stats) => {
+          if(err) {
+            reject(err);
+          } else {
+            let expiration = stats.mtime;
+            expiration.setFullYear(expiration.getFullYear() + 2);
 
-      let pemExists = fs.existsSync(pemPath);
-      let publicKeyExists = fs.existsSync(path(this.tmpDir, this._cachedHostsHash[hostIdentifier] + '_pri.pem'));
-      let privateKeyExists = fs.existsSync(path(this.tmpDir, this._cachedHostsHash[hostIdentifier] + '_pub.pem'));
-
-      try {
-        expiration = fs.statSync(pemPath).mtime;
-        expiration.setFullYear(expiration.getFullYear() + 2);
-      } catch(e) {}
-
-      if (!pemExists || !publicKeyExists || !privateKeyExists || expiration.getTime() <= new Date().getTime()) {
-
-        let socket = tls.connect(
-          {
-            host: serverUrl.hostname,
-            port: serverUrl.port,
-            rejectUnauthorized: this.rejectUnauthorized,
-            timeout: this.timeout
-          }, async () => {
-            let serverCert = socket.getPeerCertificate();
-            socket.end();
-
-            try {
-              await this._generateServerKeys(serverUrl, serverCert);
-            } catch(e) {
-              reject(e);
+            if(expiration.getTime() <= new Date().getTime()) {
+              reject('old');
+            } else {
+              resolve(stats);
             }
           }
-        );
+        });
+      }),
+      new Promise((resolve, reject) => {
+        fs.stat(path(this.tmpDir, `${identifier}_pri.pem`), (err, stats) => {
+          if(err) {
+            reject(err);
+          } else {
+            let expiration = stats.mtime;
+            expiration.setFullYear(expiration.getFullYear() + 2);
 
-        socket.on('error', async () => {
-          //we assume we can't connect to get it (localhost:port?) so generate one anyway
-
-          try {
-            socket.end();
-          } catch(e) {
-            //nothing
-          }
-
-          let serverCert = {
-            serialNumber: crypto.randomBytes(8).toString('hex'),
-            valid_from: new Date(),
-            valid_to: new Date(),
-            subject: this.tlsIssuer,
-            subjectaltname: `URI:${serverUrl.hostname}`
-          }
-
-          serverCert.valid_to.setFullYear(serverCert.valid_to.getFullYear() + 2);
-
-          try {
-            await this._generateServerKeys(serverUrl, serverCert);
-          } catch(e) {
-            reject(e);
+            if(expiration.getTime() <= new Date().getTime()) {
+              reject('old');
+            } else {
+              resolve(stats);
+            }
           }
         });
-      } else {
-        resolve(true);
-      }
+      }),
+      new Promise((resolve, reject) => {
+        fs.stat(path(this.tmpDir, `${identifier}_pub.pem`), (err, stats) => {
+          if(err) {
+            reject(err);
+          } else {
+            let expiration = stats.mtime;
+            expiration.setFullYear(expiration.getFullYear() + 2);
+
+            if(expiration.getTime() <= new Date().getTime()) {
+              reject('old');
+            } else {
+              resolve(stats);
+            }
+          }
+        });
+      })
+    ]);
+  }
+
+  _getHTTPSCertificate(serverUrl) {
+    return new Promise((resolve, reject) => {
+      let filenameIdentifier = this._cachedHostsHash[`${serverUrl.hostname}:${serverUrl.port}`];
+
+      this._serverCertFilesExist(filenameIdentifier)
+        .then(result => resolve(true))
+        .catch(err => {
+          let socket = tls.connect(
+            {
+              host: serverUrl.hostname,
+              port: serverUrl.port,
+              rejectUnauthorized: this.rejectUnauthorized,
+              timeout: this.timeout
+            }, () => {
+              let serverCert = socket.getPeerCertificate();
+              socket.end();
+
+              this._generateServerKeys(serverUrl, serverCert)
+                .then(res => resolve(res))
+                .catch(e => reject(e));
+            }
+          );
+
+          socket.on('error', () => {
+            //we assume we can't connect to get it (localhost:port?) so generate one anyway
+
+            try {
+              socket.end();
+            } catch(e) {
+              //nothing
+            }
+
+            let serverCert = {
+              serialNumber: crypto.randomBytes(8).toString('hex').toUpperCase(),
+              valid_from: new Date(),
+              valid_to: new Date(),
+              subject: this.tlsIssuer,
+              subjectaltname: `URI:${serverUrl.hostname}`
+            }
+
+            serverCert.valid_to.setFullYear(serverCert.valid_to.getFullYear() + 2);
+
+            this._generateServerKeys(serverUrl, serverCert)
+              .then(res => resolve(true))
+              .catch(e => reject(e));
+          });
+        });
     });
   }
 
@@ -618,9 +676,11 @@ module.exports = class mitmengine extends EventEmitter {
         return;
       }
 
-      let options = {};
+      let proxy, prefix;
 
       if(isHTTPS) {
+        let options = {};
+
         try {
           await this._getHTTPSCertificate(serverUrl);
 
@@ -630,10 +690,13 @@ module.exports = class mitmengine extends EventEmitter {
           reject(e);
           return;
         }
-      }
 
-      let proxy = (isHTTPS ? https : http).createServer(options);
-      let prefix = isHTTPS ? 'https://' : 'http://';
+        proxy = https.createServer(options);
+        prefix = 'https://';
+      } else {
+        proxy = http.createServer();
+        prefix = 'http://';
+      }
 
       proxy.on('connect', (req, socket, head) => {
         req.url = prefix + this._fixRequestUrl(req.url, serverUrl);
@@ -656,8 +719,12 @@ module.exports = class mitmengine extends EventEmitter {
       });
 
       proxy.on('clientError', (err, socket) => {
-        this.onError(err);
+        this.onError('mitmengine#_setupHttpServer', 'SUBPROXY_CLIENTERROR', err);
         socket.end(this._writeErrorPage(err));
+      });
+
+      proxy.on('error', (err) => {
+        this.onError('mitmengine#_settupHttpServer', 'SUBPROXY_ERROR', err);
       });
 
       this.emit('listen_pre_sub', proxy, serverUrl);
@@ -675,10 +742,26 @@ module.exports = class mitmengine extends EventEmitter {
     });
   }
 
-  async onConnect(request, clientSocket, head) {
+  onConnect(request, clientSocket, head) {
+    if(!head || head.length === 0) {
+      clientSocket.once('data', this.onConnectNext.bind(this, request, clientSocket));
+      clientSocket.write(`HTTP/${request.httpVersion} 200 Connection Established\r\n` +
+                         `Proxy-Agent: ${this.uaId}\r\n`);
+
+      if('proxy-connection' in request.headers && request.headers['proxy-connection'].toLowerCase() === 'keep-alive') {
+        clientSocket.write('Proxy-Connection: keep-alive\r\nConnection: keep-alive\r\n');
+      }
+
+      clientSocket.write('\r\n');
+    } else {
+      this.onConnectNext(request, clientSocket, head);
+    }
+  }
+
+  onConnectNext(request, clientSocket, head) {
     request.pause();
 
-    let isHTTPS = this.connectionIsHttps(request, clientSocket, head);
+    let isHTTPS = head[0] == 0x16 || head[0] == 0x80 || head[0] == 0x00;
     let parsedUrl = parse(`${isHTTPS ? 'https://' : 'http://'}${request.url}`);
     let hostIdentifier = `${parsedUrl.hostname}:${parsedUrl.port}`;
 
@@ -686,25 +769,26 @@ module.exports = class mitmengine extends EventEmitter {
       this._cachedHostsHash[hostIdentifier] = crypto.createHash('SHA256').update(hostIdentifier).digest('hex').substr(0, 32);
     }
 
-    try {
-      let server = await this._setupHttpServer(parsedUrl);
-      let {address, port} = server.address();
+    this._setupHttpServer(parsedUrl)
+      .then(resultingServer => {
+        let serverSocket = connect(resultingServer.address().port, () => {
+          serverSocket.pipe(clientSocket).pipe(serverSocket);
+          clientSocket.emit('data', head);
+          request.resume();
+        });
 
-      let serverSocket = connect(port, address, () => {
-        clientSocket.write(`HTTP/${request.httpVersion} 200 Connection Established\r\n` +
-                           `Proxy-Agent: ${this.uaId}\r\n\r\n`);
-
-        serverSocket.write(head);
-        serverSocket.pipe(clientSocket).pipe(serverSocket);
+        serverSocket.on('error', e => {
+          this.onError('mitmengine#onConnectNext', 'SERVERSOCKET_ERROR', e);
+          request.resume();
+        });
+      })
+      .catch(e => {
+        this.onError('mitmengine#onConnectNext', 'SERVERSOCKET_SETUP_ERROR', e);
         request.resume();
       });
-    } catch(e) {
-      this.onError(e);
-      request.resume();
-    }
   }
 
-  _writeErrorPage(error) {
+  _writeErrorPage (error) {
     let stack = error.stack.split('\n').join('<br/>\r\n').split(' ').join('&nbsp;');
 
     let contents = '<!doctype html>\n';
@@ -714,17 +798,15 @@ module.exports = class mitmengine extends EventEmitter {
     contents += '<meta charset="utf-8" />\n';
     contents += '</head>\n';
     contents += '<body>\n';
-    contents += '<h3>' + error.message + '</h3>\n';
+    contents += '<h3>Proxy Error</h3>\n';
     contents += '<p>' + stack + '</p>\n';
     contents += '</body>\n';
     contents += '</html>';
 
-    this.debug(`wrote error page (${error.message})`);
-
     return contents;
   }
 
-  responseData(queuePosition, chunk) {
+  responseData (queuePosition, chunk) {
     this.emit('response_data', queuePosition, chunk);
 
     if(this.onResponseData) {
@@ -734,7 +816,7 @@ module.exports = class mitmengine extends EventEmitter {
     return chunk;
   }
 
-  responseEnd(queuePosition, chunk) {
+  responseEnd (queuePosition, chunk) {
     this.emit('response_end', queuePosition, chunk);
 
     if(this.onResponseEnd) {
@@ -745,7 +827,7 @@ module.exports = class mitmengine extends EventEmitter {
     return chunk;
   }
 
-  _curlRequest(method, url, httpVersion, headers, postField, clientResponse, queuePosition) {
+  _curlRequest (method, url, httpVersion, headers, postField, clientResponse, queuePosition) {
     let curl = new libcurl();
     let closeConnection = curl.close.bind(curl);
 
@@ -847,7 +929,7 @@ module.exports = class mitmengine extends EventEmitter {
     curl.on('end', () => clientResponse.end(this.responseEnd(queuePosition, null)));
 
     curl.on('error', (error) => {
-      this.onError(error);
+      this.onError('mitmengine#_curlRequest', 'CURL_REQUEST_ERROR', error);
       clientResponse.end(this._writeErrorPage(error));
       closeConnection();
 
@@ -857,7 +939,7 @@ module.exports = class mitmengine extends EventEmitter {
     curl.perform();
   }
 
-  onRequest(clientRequest, clientResponse) {
+  onRequest (clientRequest, clientResponse) {
     clientRequest.pause();
 
     let queuePosition = this.requestQueue++;
@@ -931,7 +1013,8 @@ module.exports = class mitmengine extends EventEmitter {
         headers: this._getRawHeaderObj(rawHeaders),
         method: method,
         rejectUnauthorized: this.rejectUnauthorized,
-        port: 80
+        port: 80,
+        timeout: this.timeout
       }, parse(url));
 
       let tunnelagent = false;
@@ -1013,7 +1096,7 @@ module.exports = class mitmengine extends EventEmitter {
 
         clientResponse.on('error', err => {
           this.debug(`clientResponse error: ${err.message}`);
-          this.onError(err);
+          this.onError('mitmengine#onRequest', 'CLIENTRESPONSE_ERROR', err);
 
           clientResponse.end(this._writeErrorPage(err));
           this.requestQueue--;
@@ -1021,7 +1104,7 @@ module.exports = class mitmengine extends EventEmitter {
 
         serverResponse.on('error', err => {
           this.debug(`serverResponse error: ${err.message}`);
-          this.onError(err);
+          this.onError('mitmengine#onRequest', 'SERVERRESPONSE_ERROR', err);
 
           clientResponse.end(this._writeErrorPage(err));
           this.requestQueue--;
@@ -1033,7 +1116,7 @@ module.exports = class mitmengine extends EventEmitter {
         serverResponse.resume();
       }).on('error', err => {
         this.debug(`connector error: ${err.message}`);
-        this.onError(err);
+        this.onError('mitmengine#onRequest', 'CONNECTOR_ERROR', err);
 
         clientResponse.end(this._writeErrorPage(err));
         this.requestQueue--;
@@ -1055,7 +1138,7 @@ module.exports = class mitmengine extends EventEmitter {
     }
 
     clientRequest.on('error', error => {
-      this.onError(error);
+      this.onError('mitmengine#onRequest', 'CLIENTREQUEST_ERROR', error);
       clientResponse.end(this._writeErrorPage(error));
       this.requestQueue--;
     });
@@ -1063,11 +1146,12 @@ module.exports = class mitmengine extends EventEmitter {
     clientRequest.resume();
   }
 
-  onError(err) {
-    this.emit('error', err);
+  onError (where, description, err) {
+    this.debug('ERROR: [%s] [%s] [%s]', where, description, err.message);
+    this.emit('error', where, description, err);
   }
 
-  upstreamUrlValid(url) {
+  _upstreamValid (url) {
     let testParse = parse(url);
     let supportedProtocols = ['http:', 'https:', 'socks4:', 'socks4a:', 'socks5:', 'socks5h:'];
 
@@ -1078,40 +1162,151 @@ module.exports = class mitmengine extends EventEmitter {
             );
   }
 
-  async listen(newRootCertificate=false) {
-    if (this.useUpstreamProxy && !this.upstreamUrlValid(this.proxyUrl)) {
-      this.onError(new Error('The configured upstream URL is invalid. Please specify a URL starting with http://, https://, socks4://, socks5:// etc.'));
-      return false;
+  _appendProxyListeners () {
+    this.setProxyTimeout();
+
+    this._proxy.on('connect', this.onConnect.bind(this));
+    this._proxy.on('request', this.onRequest.bind(this));
+    this._proxy.on('error', this.onError.bind(this, 'proxy#error', 'PROXY_ERROR'));
+
+    this._proxy.on('clientError', (err, socket) => {
+      this.onError('proxy#clientError', 'clientError', err);
+      socket.end(this._writeErrorPage(err));
+    });
+  }
+
+  _createProxyServer () {
+    return new Promise((resolve, reject) => {
+      if (this.useHTTPS) {
+        fs.readFile(path(this.tmpDir, 'ca.pem'), 'utf8', (err, cert) => {
+          if(err) {
+            this.onError('mitmengine#_createProxyServer', 'CAPEM_READ_ERROR', err);
+            reject(err);
+            return;
+          }
+
+          fs.readFile(path(this.tmpDir, 'ca_pri.pem'), 'utf8', (err, key) => {
+            if(err) {
+              this.onError('mitmengine#_createProxyServer', 'CAPRIPEM_READ_ERROR', err);
+              reject(err);
+              return;
+            }
+
+            this._proxy = https.createServer({
+              key: key,
+              cert: cert,
+              rejectUnauthorized: this.rejectUnauthorized
+            });
+
+            this._appendProxyListeners();
+            resolve(true);
+          });
+        });
+      } else {
+        this._proxy = http.createServer();
+        this._appendProxyListeners();
+        resolve(true);
+      }
+    });
+  }
+
+  _checkListenErrors () {
+    if (this.listening) {
+      let err = new Error('Proxy is already listening');
+      this.onError('mitmengine#_checkListenErrors', 'PROXY_LISTENING', err);
+      return err;
     }
 
-    this.emit('listen_pre', this._proxy);
+    if (this.useUpstreamProxy && !this._upstreamValid(this.proxyUrl)) {
+      let err = new Error('The configured upstream URL is invalid. Please specify a URL starting with http://, https://, socks4://, socks5:// etc.');
+      this.onError('mitmengine#listen', 'PROXY_UPSTREAM_ERROR', err);
+      return err;
+    }
 
-    try {
-      await this.cacheNewCA(newRootCertificate);
-
-      if(typeof this.port !== 'number' || (typeof this.port === 'number' && (this.port < 0 || this.port > 0xFFFF))) {
-        this.debug(`invalid port: [${typeof this.port} ${this.port}], set to random port`);
-        this.port = 0;
-      }
-
-      this._proxy.listen(this.port, this.hostname, () => {
-        this.port = this.port === 0 ? this._proxy.address().port : this.port;
-
-        this.debug(`LISTEN: ${this.hostname}:${this.port}`);
-        this.listening = true;
-
-        this.emit('listen_post', this._proxy);
-      });
-
-    } catch(e) {
-      this.onError(e);
-      return false;
+    if (typeof this.port !== 'number' || (typeof this.port === 'number' && (this.port < 0 || this.port > 0xFFFF))) {
+      let err = new Error('The port number is invalid. Port must be 0-65535.');
+      this.onError('mitmengine#listen', 'PROXY_PORT_ERROR', err);
+      return err;
     }
 
     return true;
   }
 
-  end() {
+  async listenSync (newRootCertificate = false) {
+    let check = this._checkListenErrors();
+
+    if(check != true) {
+      return check;
+    }
+
+    let pemKey = '';
+    try {
+      pemKey = await this._cacheMasterKeys();
+    } catch(e) {
+      this.onError('mitmengine#listen', 'CACHECA_ERROR', e);
+      return false;
+    }
+
+    this._cachedPrivateKey = forge.pki.privateKeyFromPem(pemKey);
+
+    try {
+      await this._createProxyServer();
+    } catch(e) {
+      this.onError('mitmengine#listen', 'PROXY_CREATE_ERROR', e);
+      return false;
+    }
+
+    this.emit('listen_pre', this._proxy);
+
+    this._proxy.listen(this.port, this.hostname, () => {
+      this.port = this.port === 0 ? this._proxy.address().port : this.port;
+
+      this.debug(`LISTEN: ${this.hostname}:${this.port}`);
+      this.listening = true;
+
+      this.emit('listen_post', this._proxy);
+    });
+
+    return true;
+  }
+
+  listen (newRootCertificate = false) {
+    return new Promise((resolve, reject) => {
+      this._cacheMasterKeys(newRootCertificate)
+        .then(pemKey => {
+          let err = this._checkListenErrors();
+
+          if(err != true) {
+            reject(err);
+            return;
+          }
+
+          this._cachedPrivateKey = forge.pki.privateKeyFromPem(pemKey);
+
+          this._createProxyServer().then(proxyRes => {
+            this.emit('listen_pre', this._proxy);
+
+            this._proxy.listen(this.port, this.hostname, () => {
+              this.port = this.port === 0 ? this._proxy.address().port : this.port;
+
+              this.debug(`LISTEN: ${this.hostname}:${this.port}`);
+              this.listening = true;
+
+              this.emit('listen_post', this._proxy);
+            });
+          }).catch(e => {
+            this.onError('mitmengine#listen', 'PROXY_CREATE_ERROR', e);
+            reject(e);
+          });
+        })
+        .catch(e => {
+          this.onError('mitmengine#listen', 'CACHECA_ERROR', e);
+          reject(e);
+        });
+    });
+  }
+
+  endSync() {
     try {
       Object.keys(this._cachedServersList).forEach(key => {
         let {address, port} = this._cachedServersList[key].address();
@@ -1122,7 +1317,7 @@ module.exports = class mitmengine extends EventEmitter {
         });
       });
     } catch(e) {
-      this.onError(e);
+      this.onError('mitmengine#end', 'SUBPROXY_CLOSE_ERROR', e);
     }
 
     this._cachedServersList = {};
@@ -1131,6 +1326,46 @@ module.exports = class mitmengine extends EventEmitter {
     this._proxy.close(() => {
       this.listening = false;
       this.emit('close');
+    });
+  }
+
+  end() {
+    return new Promise((res, rej) => {
+      let promiseChain = [];
+
+      Object.keys(this._cachedServersList).forEach(key => {
+        promiseChain.push(new Promise((resolve, reject) => {
+          if(this._cachedServersList[key].listening) {
+            let {address, port} = this._cachedServersList[key].address();
+            this.debug(`CLOSE: ${address === '::' ? os.hostname() : address}:${port}`);
+
+            this._cachedServersList[key].on('error', err => {
+              this.onError('mitmengine#end', 'SUBPROXY_CLOSE_ERROR', err);
+              reject(err);
+            });
+
+            this._cachedServersList[key].close(() => {
+              delete this._cachedServersList[key];
+              resolve(true);
+            });
+          } else {
+            resolve(true);
+            delete this._cachedServersList[key];
+          }
+        }));
+      });
+
+      Promise.all(promiseChain)
+        .then(() => {
+          this.debug(`CLOSE: ${this.hostname}:${this.port}`);
+          this._proxy.close(() => {
+            this.listening = false;
+            this.emit('close');
+
+            res(true);
+          });
+        })
+        .catch(e => rej(e));
     });
   }
 }
