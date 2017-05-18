@@ -63,7 +63,7 @@
     "babel-preset-react": "^6.24.1",
     "chai": "^3.5.0",
     "debug": "^2.6.6",
-    "electron": "1.7.x",
+    "electron": "1.7",
     "electron-builder": "^17.5.0",
     "electron-react-devtools": "^0.4.0",
     "eslint": "^3.19.0",

@@ -24,7 +24,7 @@ Run the following in your command line:
 
 ~~~bash
 # Install Electron globally
-npm i -g electron
+npm i -g electron@1.7
 
 # Install wssip global for "wssip" command
 npm i -g wssip
@@ -36,7 +36,7 @@ wssip
 **yarn**: (Make sure the directory in `yarn global bin` is in your `PATH`)
 
 ~~~bash
-yarn global add electron
+yarn global add electron@1.7
 yarn global add wssip
 wssip
 ~~~
@@ -58,7 +58,7 @@ cd wssip
 # npm i
 
 # If not... (as to minimize disk space):
-npm i -g electron
+npm i -g electron@1.7
 npm i --production
 
 # Start application:
