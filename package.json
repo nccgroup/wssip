@@ -91,7 +91,7 @@
     "artifactName": "wssip-${version}.${ext}",
     "directories": {
       "buildResources": "./build/staging",
-      "output": "./dist"
+      "output": "./build/output"
     },
     "dmg": {
       "contents": [
@@ -125,7 +125,6 @@
       "target": [
         "AppImage",
         "deb",
-        "rpm",
         "zip"
       ]
     },
