@@ -1,5 +1,6 @@
 import React from 'react';
 import autoBind from 'react-autobind';
+import Bootstrap from 'bootstrap/dist/css/bootstrap.css';
 import ReactDataGrid from 'react-data-grid';
 import {InactiveConnectionColumns} from './_ReactStyle';
 

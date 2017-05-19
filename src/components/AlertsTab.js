@@ -1,4 +1,5 @@
 import React from 'react';
+import Bootstrap from 'bootstrap/dist/css/bootstrap.css';
 import ReactDataGrid from 'react-data-grid';
 
 import {AlertsColumns} from './_ReactStyle';

@@ -1,6 +1,7 @@
 {
   "name": "wssip",
-  "version": "1.0.10",
+  "productName": "WSSiP",
+  "version": "1.0.11",
   "description": "Intercepting Proxy Application to capture, modify and send custom data from one WebSocket host to another, primarily for penetration testing. Supports WebSocket RFC6455 implementations and Socket.io.",
   "main": "lib/electron.js",
   "bin": {
@@ -45,10 +46,14 @@
     "http",
     "https"
   ],
-  "author": "Samantha Chalker <samantha@chalker.io>",
+  "author": {
+    "name": "Samantha Chalker",
+    "email": "samantha@chalker.io",
+    "url": "https://chalker.io"
+  },
   "license": "AGPL-3.0",
+  "homepage": "https://github.com/nccgroup/wssip",
   "dependencies": {
-    "bootstrap": "^3.3.7",
     "conf": "^1.1.1",
     "electron-window-state": "^4.1.1",
     "hexy": "^0.2.9",
@@ -61,26 +66,33 @@
     "babel-loader": "^7.0.0",
     "babel-preset-es2015": "^6.24.1",
     "babel-preset-react": "^6.24.1",
+    "bootstrap": "^3.3.7",
     "chai": "^3.5.0",
-    "debug": "^2.6.6",
+    "css-loader": "^0.28.1",
+    "debug": "^2.6.8",
     "electron": "1.7",
-    "electron-builder": "^17.5.0",
+    "electron-builder": "^17.8.0",
     "electron-react-devtools": "^0.4.0",
     "eslint": "^3.19.0",
-    "eslint-config-airbnb": "^14.1.0",
+    "eslint-config-airbnb": "^15.0.1",
     "eslint-plugin-import": "^2.2.0",
-    "eslint-plugin-jsx-a11y": "^4.0.0",
-    "eslint-plugin-react": "^6.9.0",
+    "eslint-plugin-jsx-a11y": "^5.0.3",
+    "eslint-plugin-react": "^7.0.1",
+    "file-loader": "^0.11.1",
     "lodash": "^4.17.4",
     "material-ui": "0.18.x",
     "mocha": "^3.4.1",
-    "node-libcurl": "^1.1.0",
     "react": "15.5.x",
     "react-autobind": "^1.0.6",
     "react-data-grid": "2.0.x",
     "react-dom": "^15.5.4",
     "react-tap-event-plugin": "^2.0.1",
+    "style-loader": "^0.17.0",
+    "url-loader": "^0.5.8",
     "webpack": "^2.5.1"
+  },
+  "optionalDependencies": {
+    "node-libcurl": "^1.1.0"
   },
   "preferGlobal": true,
   "engines": {
@@ -88,13 +100,13 @@
   },
   "build": {
     "appId": "com.nccgroup.wssip",
-    "artifactName": "${name}-${version}-${os}-${arch}.${ext}",
+    "githubArtifactName": "${name}-${version}-${os}-${arch}.${ext}",
     "directories": {
       "buildResources": "./build/staging",
       "output": "./build/output"
     },
     "dmg": {
-      "artifactName": "${name}-${version}-mac-${arch}.${ext}",
+      "githubArtifactName": "${name}-${version}-macos-${arch}.${ext}",
       "contents": [
         {
           "x": 100,
@@ -110,7 +122,7 @@
     },
     "files": [
       "app/app.html",
-      "app/app.js",
+      "app/bundle/*",
       "build/icon.ico",
       "build/icon.icns",
       "build/icons/*",
@@ -121,17 +133,19 @@
       "package.json"
     ],
     "linux": {
-      "artifactName": "${name}-${version}-linux-${arch}.${ext}",
+      "githubArtifactName": "${name}-${version}-linux-${arch}.${ext}",
       "category": "Utility",
       "icon": "./build/icons",
       "target": [
         "AppImage",
         "deb",
+        "pacman",
+        "rpm",
         "zip"
       ]
     },
     "mac": {
-      "artifactName": "${name}-${version}-mac-${arch}.${ext}",
+      "githubArtifactName": "${name}-${version}-macos-${arch}.${ext}",
       "category": "public.app-category.utilities",
       "icon": "./build/icon.icns",
       "target": [
@@ -144,18 +158,17 @@
     "npmRebuild": true,
     "nsis": {
       "unicode": false,
-      "artifactName": "${name}-${version}-${arch}-installer.${ext}"
+      "githubArtifactName": "${name}-${version}-windows-${arch}-installer.${ext}"
     },
     "portable": {
       "unicode": false,
-      "artifactName": "${name}-${version}-${arch}-portable.${ext}"
+      "githubArtifactName": "${name}-${version}-windows-${arch}-portable.${ext}"
     },
     "productName": "WSSiP",
     "win": {
-      "artifactName": "${name}-${version}-win-${arch}.${ext}",
+      "githubArtifactName": "${name}-${version}-windows-${arch}.${ext}",
       "icon": "./build/icon.ico",
       "target": [
-        "nsis",
         "portable",
         "zip"
       ]

@@ -1,4 +1,4 @@
-# WSSiP
+# WSSiP: A WebSocket Manipulation Proxy
 
 [![Travis-CI](https://travis-ci.org/nccgroup/wssip.svg?branch=master)](https://travis-ci.org/nccgroup/wssip)
 [![Appveyor](https://ci.appveyor.com/api/projects/status/q85uar6lmhddke6j?svg=true)](https://ci.appveyor.com/project/thekettu/wssip)
@@ -6,6 +6,7 @@
 [![npm](https://img.shields.io/npm/dt/wssip.svg)](https://www.npmjs.com/package/wssip)
 [![github](https://img.shields.io/github/downloads/nccgroup/wssip/total.svg)](https://github.com/nccgroup/wssip)
 [![github release](https://img.shields.io/github/release/nccgroup/wssip.svg)](https://github.com/nccgroup/wssip/releases)
+[![dependency outdated](https://david-dm.org/nccgroup/wssip/dev-status.svg)](https://david-dm.org/nccgroup/wssip)
 
 Short for "WebSocket/Socket.io Proxy", this tool, written in Node.js, provides a user interface to capture, intercept, send custom messages and view all WebSocket and Socket.IO communications between the client and server.
 
@@ -167,4 +168,4 @@ Currently working on:
 * Rewrite in TypeScript (likely 1.2.0)
 * Using something other than Appbar for Custom/Intercept tabs, and styling the options to center better
 
-For information on using the `mitmengine` class, see either: [npm](https://npmjs.com/package/mitmengine), [yarn](https://yarnpkg.com/en/package/mitmengine), or [mitmengine/README.md](https://github.com/nccgroup/wssip/mitmengine/README.md)
+For information on using the `mitmengine` class, see: [npm](https://npmjs.com/package/mitmengine), [yarn](https://yarnpkg.com/en/package/mitmengine), or [mitmengine/README.md](https://github.com/nccgroup/wssip/blob/master/mitmengine/README.md)

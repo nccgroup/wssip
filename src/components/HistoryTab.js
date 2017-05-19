@@ -4,6 +4,7 @@ import {hexy} from 'hexy';
 
 import Checkbox from 'material-ui/Checkbox';
 import TextField from 'material-ui/TextField';
+import Bootstrap from 'bootstrap/dist/css/bootstrap.css';
 import ReactDataGrid from 'react-data-grid';
 import {HistoryColumns} from './_ReactStyle';
 

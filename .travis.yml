@@ -1,7 +1,3 @@
-osx_image: xcode7.3
-
-dist: trusty
-sudo: false
 language: c
 
 env:
@@ -10,7 +6,11 @@ env:
 matrix:
   include:
     - os: osx
+      osx_image: xcode8.3
+      sudo: false
     - os: linux
+      dist: trusty
+      sudo: false
       env: CC=clang CXX=clang++ npm_config_clang=1
       compiler: clang
 
@@ -23,9 +23,14 @@ cache:
 addons:
   apt:
     packages:
+      - bsdtar
+      - g++-multilib
+      - gcc-multilib
       - libgnome-keyring-dev
       - libsecret-1-dev
       - icnsutils
+      - rpm
+      - xz-utils
 
 before_install:
   - rm -rf ~/.nvm
@@ -34,7 +39,6 @@ before_install:
   - nvm install 7
   - curl -o- -L https://yarnpkg.com/install.sh | bash
   - export PATH="$HOME/.yarn/bin:$PATH"
-  - node --version
 
 install:
 - yarn install
@@ -43,4 +47,5 @@ script:
 - yarn run build
 
 branches:
-  - master
+  only:
+    - master

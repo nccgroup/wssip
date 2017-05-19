@@ -11,11 +11,13 @@ clone_depth: 5
 cache:
   - node_modules
   - '%USERPROFILE%\.electron'
+  - '%LOCALAPPDATA%\Yarn\cache'
+
+init:
+  - cmd: git config --global core.autocrlf input
 
 install:
   - ps: Update-NodeJsInstallation (Get-NodeJsLatestBuild $env:nodejs_version) $env:Platform
-  - node --version
-  - yarn --version
   - SET CI=true
   - SET PATH=%cd%\node_modules\.bin;%PATH%
   - yarn install
@@ -25,7 +27,7 @@ build_script:
 
 test: off
 
-version: "{build}"
+version: "1.0-{build}"
 
 branches:
   only:
