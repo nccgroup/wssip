@@ -94,6 +94,7 @@
       "output": "./build/output"
     },
     "dmg": {
+      "artifactName": "${name}-${version}-mac-${arch}.${ext}",
       "contents": [
         {
           "x": 100,
@@ -143,11 +144,11 @@
     "npmRebuild": true,
     "nsis": {
       "unicode": false,
-      "artifactName": "${name}-${version}-${arch}-installer.${ext}",
+      "artifactName": "${name}-${version}-${arch}-installer.${ext}"
     },
     "portable": {
       "unicode": false,
-      "artifactName": "${name}-${version}-${arch}-portable.${ext}",
+      "artifactName": "${name}-${version}-${arch}-portable.${ext}"
     },
     "productName": "WSSiP",
     "win": {
