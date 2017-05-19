@@ -100,13 +100,13 @@
   },
   "build": {
     "appId": "com.nccgroup.wssip",
-    "githubArtifactName": "${name}-${version}-${os}-${arch}.${ext}",
+    "artifactName": "${name}-${version}-${os}-${arch}.${ext}",
     "directories": {
       "buildResources": "./build/staging",
       "output": "./build/output"
     },
     "dmg": {
-      "githubArtifactName": "${name}-${version}-macos-${arch}.${ext}",
+      "artifactName": "${name}-${version}-macos-${arch}.${ext}",
       "contents": [
         {
           "x": 100,
@@ -133,7 +133,7 @@
       "package.json"
     ],
     "linux": {
-      "githubArtifactName": "${name}-${version}-linux-${arch}.${ext}",
+      "artifactName": "${name}-${version}-linux-${arch}.${ext}",
       "category": "Utility",
       "icon": "./build/icons",
       "target": [
@@ -145,7 +145,7 @@
       ]
     },
     "mac": {
-      "githubArtifactName": "${name}-${version}-macos-${arch}.${ext}",
+      "artifactName": "${name}-${version}-macos-${arch}.${ext}",
       "category": "public.app-category.utilities",
       "icon": "./build/icon.icns",
       "target": [
@@ -158,15 +158,15 @@
     "npmRebuild": true,
     "nsis": {
       "unicode": false,
-      "githubArtifactName": "${name}-${version}-windows-${arch}-installer.${ext}"
+      "artifactName": "${name}-${version}-windows-${arch}-installer.${ext}"
     },
     "portable": {
       "unicode": false,
-      "githubArtifactName": "${name}-${version}-windows-${arch}-portable.${ext}"
+      "artifactName": "${name}-${version}-windows-${arch}-portable.${ext}"
     },
     "productName": "WSSiP",
     "win": {
-      "githubArtifactName": "${name}-${version}-windows-${arch}.${ext}",
+      "artifactName": "${name}-${version}-windows-${arch}.${ext}",
       "icon": "./build/icon.ico",
       "target": [
         "portable",

@@ -1,5 +1,7 @@
 language: c
 
+dist: trusty
+
 env:
   - ELECTRON_CACHE=$HOME/.electron
 
@@ -9,7 +11,6 @@ matrix:
       osx_image: xcode8.3
       sudo: false
     - os: linux
-      dist: trusty
       sudo: false
       env: CC=clang CXX=clang++ npm_config_clang=1
       compiler: clang
