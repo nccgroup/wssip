@@ -5,7 +5,7 @@
 [![npm version](https://img.shields.io/npm/v/wssip.svg)](https://www.npmjs.com/package/wssip)
 [![npm](https://img.shields.io/npm/dt/wssip.svg)](https://www.npmjs.com/package/wssip)
 [![github](https://img.shields.io/github/downloads/nccgroup/wssip/total.svg)](https://github.com/nccgroup/wssip)
-[![github release](https://img.shields.io/github/release/nccgroup/wssip.svg)](https://github.com/nccgroup/wssip/releases)]
+[![github release](https://img.shields.io/github/release/nccgroup/wssip.svg)](https://github.com/nccgroup/wssip/releases)
 
 Short for "WebSocket/Socket.io Proxy", this tool, written in Node.js, provides a user interface to capture, intercept, send custom messages and view all WebSocket and Socket.IO communications between the client and server.
 

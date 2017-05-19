@@ -15,6 +15,7 @@ cache:
 install:
   - ps: Update-NodeJsInstallation (Get-NodeJsLatestBuild $env:nodejs_version) $env:Platform
   - node --version
+  - yarn --version
   - SET CI=true
   - SET PATH=%cd%\node_modules\.bin;%PATH%
   - yarn install
