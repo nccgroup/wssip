@@ -11,7 +11,6 @@ clone_depth: 5
 cache:
   - node_modules
   - '%USERPROFILE%\.electron'
-  - '%USERPROFILE%\.cache'
 
 install:
   - ps: Update-NodeJsInstallation (Get-NodeJsLatestBuild $env:nodejs_version) $env:Platform
@@ -26,3 +25,6 @@ build_script:
 test: off
 
 version: "{build}"
+
+branches:
+  - master

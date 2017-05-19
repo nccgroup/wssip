@@ -88,7 +88,7 @@
   },
   "build": {
     "appId": "com.nccgroup.wssip",
-    "artifactName": "wssip-${version}.${ext}",
+    "artifactName": "${name}-${version}-${os}-${arch}.${ext}",
     "directories": {
       "buildResources": "./build/staging",
       "output": "./build/output"
@@ -144,6 +144,7 @@
       "icon": "./build/icon.ico",
       "target": [
         "nsis",
+        "portable",
         "zip"
       ]
     }
