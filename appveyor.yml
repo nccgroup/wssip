@@ -27,4 +27,5 @@ test: off
 version: "{build}"
 
 branches:
-  - master
+  only:
+    - master
