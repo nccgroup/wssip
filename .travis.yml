@@ -45,7 +45,8 @@ install:
 - yarn install
 
 script:
-- yarn run build:travis
+- if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then yarn run build:travis-mac; fi
+- if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then yarn run build:travis-linux; fi
 
 branches:
   only:
