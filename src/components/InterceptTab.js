@@ -22,8 +22,7 @@ export default class InterceptTab extends React.Component {
       interceptValue: {client: '', server: ''},
       menu: {client: 'message', server: 'message'},
       interceptionOn: {client: false, server: false},
-      isBinary: {client: false, server: false},
-      isMasked: {client: false, server: false}
+      isBinary: {client: false, server: false}
     }
   }
 
@@ -58,9 +57,8 @@ export default class InterceptTab extends React.Component {
   }
 
   resetToDefault(sender) {
-    const {editing, isMasked, isBinary, interceptValue, menu} = this.state;
+    const {editing, isBinary, interceptValue, menu} = this.state;
 
-    isMasked[sender] = false;
     isBinary[sender] = false;
     interceptValue[sender] = '';
     menu[sender] = 'message';
@@ -68,7 +66,6 @@ export default class InterceptTab extends React.Component {
 
     this.setState({
       editing: editing,
-      isMasked: isMasked,
       isBinary: isBinary,
       interceptValue: interceptValue,
       menu: menu,
@@ -86,7 +83,6 @@ export default class InterceptTab extends React.Component {
       this.state.menu[sender],
       this.state.interceptValue[sender],
       this.state.isBinary[sender],
-      this.state.isMasked[sender],
       (heldForIntercept[sender][0].data !== this.state.interceptValue[sender]),
       true,
       false
@@ -133,10 +129,6 @@ export default class InterceptTab extends React.Component {
                 label="Binary"
                 onToggle={(event, checked) => this.changeVal('server', 'isBinary', checked)}
               />
-              <Toggle
-                label="Masked"
-                onToggle={(event, checked) => this.changeVal('server', 'isMasked', checked)}
-              />
             </div>
           }
           iconElementRight={
@@ -177,10 +169,6 @@ export default class InterceptTab extends React.Component {
               <Toggle
                 label="Binary"
                 onToggle={(event, checked) => this.changeVal('client', 'isBinary', checked)}
-              />
-              <Toggle
-                label="Masked"
-                onToggle={(event, checked) => this.changeVal('client', 'isMasked', checked)}
               />
             </div>
           }

@@ -166,8 +166,10 @@ export default class Main extends React.Component {
     });
   }
 
-  handleMitmData(event, id, sender, message, type, flags) {
-    let rowIndex = this.connectionRowIndexById(id);
+  handleMitmData(event, id, sender, data, type) {
+    let rowIndex = this.connectionRowIndexById(id),
+        binary = typeof data === 'object' && data.type === 'Buffer',
+        message = binary ? data.data : data;
 
     if(rowIndex === -1)
       return;
@@ -196,8 +198,7 @@ export default class Main extends React.Component {
         direction,
         type,
         message,
-        flags.binary,
-        flags.masked,
+        binary,
         false,
         false
       );
@@ -205,8 +206,7 @@ export default class Main extends React.Component {
       let newArr = {
         type: type,
         data: message,
-        binary: flags.binary,
-        masked: flags.masked
+        binary: binary
       }
 
       if(sender === 'client') {
@@ -233,11 +233,15 @@ export default class Main extends React.Component {
     } = this.state;
 
     let rowIndex = this.connectionRowIndexById(id);
+    this.props.ipcRenderer.send('debug', 'Main', `handleCloseConnection: id ${id} returns row ${rowIndex}`);
 
     if(rowIndex === -1)
       return;
 
     let connection = activeConnections[rowIndex];
+    
+    if(typeof connection !== 'object')
+      return;
 
     connectionIndex[id] = inactiveConnections.push({
       id: connection.id,
@@ -309,7 +313,7 @@ export default class Main extends React.Component {
 
     if(messageArr !== false && checked === false) {
       heldForIntercepts[id][sender].forEach(individualMsg =>
-        this.handleMessageSent(id, sender, individualMsg.type, individualMsg.data, individualMsg.binary, individualMsg.masked, false, false));
+        this.handleMessageSent(id, sender, individualMsg.type, individualMsg.data, individualMsg.binary, false, false));
     }
 
     heldForIntercepts[id][sender] = checked ? [] : false;
@@ -326,45 +330,39 @@ export default class Main extends React.Component {
     this.setState({ heldForIntercepts: heldForIntercepts });
   }
 
-  renderDataPreview(binary, data) {
+  renderDataPreview(data) {
     if(data === null) return '';
 
-    let preview = '';
-
-    if(binary) {
-      preview = `<Binary, ${data.length} byte(s)>`;
+    if(typeof data !== 'string') {
+      return `<Binary, ${data.length} byte(s)>`;
     } else {
       if(data.length > this.state.substrLength) {
-        preview = data.substr(0, this.state.substrLength);
+        return data.substr(0, this.state.substrLength);
       } else {
         return data;
       }
     }
-
-    return preview;
   }
 
-  handleMessageSent(id, sender, type, data, binary, masked, intercepted, custom) {
+  handleMessageSent(id, sender, type, data, binary, intercepted, custom) {
     id = Number(id);
     let {messageHistory} = this.state;
 
     messageHistory[id].push({
       time: this.getCurrentDateTime(),
-      sender: sender,
+      sender: sender === 'client' && !custom ? 'server' : 'client',
       type: type,
       data: data,
-      preview: this.renderDataPreview(binary, data),
+      preview: this.renderDataPreview(data),
       binary: binary,
       binaryDisplay: binary ? (<Checkbox checked={true} disabled={true} />) : (<Checkbox disabled={true} />),
-      masked: masked,
-      maskedDisplay: masked ? (<Checkbox checked={true} disabled={true} />) : (<Checkbox disabled={true} />),
       intercepted: intercepted ? (<Checkbox checked={true} disabled={true} />) : (<Checkbox disabled={true} />),
       custom: custom ? (<Checkbox checked={true} disabled={true} />) : (<Checkbox disabled={true} />)
     });
 
     this.setState({ messageHistory: messageHistory }, () => {
       this.props.ipcRenderer.send('debug', 'Main', `Outgoing ${id}: ${sender}-${type} with ${data.length} bytes`);
-      this.props.ipcRenderer.send(`mitmengine-send-${id}`, sender, type, data, { binary: binary, mask: masked });
+      this.props.ipcRenderer.send(`mitmengine-send-${id}`, sender, type, data, { binary: binary });
     });
   }
 

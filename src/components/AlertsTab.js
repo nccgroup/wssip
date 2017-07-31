@@ -16,7 +16,7 @@ export default class AlertsTab extends React.Component {
       <div style={{height: '100%'}}>
         <ReactDataGrid
           columns={AlertsColumns}
-          rowGetter={(i) => Object.assign({}, alerts[i])}
+          rowGetter={i => Object.assign({}, alerts[i])}
           rowsCount={alerts.length}
           minHeight={height}
         />

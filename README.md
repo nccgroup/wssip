@@ -64,7 +64,7 @@ cd wssip
 # npm i
 
 # If not... (as to minimize disk space):
-npm i -g electron@1.7
+npm i electron@1.7
 npm i --production
 
 # Start application:
@@ -120,7 +120,7 @@ Send WebSocket data.
 
 * **URL**
 
-  POST http://mitm/ws/:id/:sender/:mode/:type?log=:log&mask=:mask
+  POST http://mitm/ws/:id/:sender/:mode/:type?log=:log
 
 * **URL Params**
 
@@ -137,8 +137,6 @@ Send WebSocket data.
   **Optional:**
 
   `log` either `true` or `y` to log in the WSSiP application. Errors will be logged in the WSSiP application instead of being returned via the REST API.
-
-  `mask` either `true` or `y` to set WebSocket flag to mask.
 
 * **Data Params**
 

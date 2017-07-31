@@ -16,9 +16,7 @@ export default class CustomTab extends React.Component {
 
     this.state = {
       serverIsBinary: false,
-      serverIsMasked: false,
       clientIsBinary: false,
-      clientIsMasked: false,
       sendServerValue: '',
       sendClientValue: '',
       sendServerMenu: 'message',
@@ -33,7 +31,6 @@ export default class CustomTab extends React.Component {
       this.state.sendServerMenu,
       this.state.sendServerValue,
       this.state.serverIsBinary,
-      this.state.serverIsMasked,
       false,
       true
     );
@@ -46,7 +43,6 @@ export default class CustomTab extends React.Component {
       this.state.sendClientMenu,
       this.state.sendClientValue,
       this.state.clientIsBinary,
-      this.state.clientIsMasked,
       false,
       true
     );
@@ -64,10 +60,6 @@ export default class CustomTab extends React.Component {
               <Toggle
                 label="Binary"
                 onToggle={(event, checked) => this.setState({ serverIsBinary: checked })}
-              />
-              <Toggle
-                label="Masked"
-                onToggle={(event, checked) => this.setState({ serverIsMasked: checked })}
               />
             </div>
           }
@@ -101,10 +93,6 @@ export default class CustomTab extends React.Component {
               <Toggle
                 label="Binary"
                 onToggle={(event, checked) => this.setState({ clientIsBinary: checked })}
-              />
-              <Toggle
-                label="Masked"
-                onToggle={(event, checked) => this.setState({ clientIsMasked: checked })}
               />
             </div>
           }

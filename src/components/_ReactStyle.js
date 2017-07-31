@@ -177,12 +177,6 @@ export const HistoryColumns = [
     name: 'Binary',
     resizable: true,
     sortable: true
-  },
-  {
-    key: 'maskedDisplay',
-    name: 'Masked',
-    resizable: true,
-    sortable: true
   }
 ];
 

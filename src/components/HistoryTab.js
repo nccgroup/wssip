@@ -28,12 +28,8 @@ export default class HistoryTab extends React.Component {
     if(selected.length === 1 && selected[0] !== -1) {
       const msgObj = this.props.messageHistory[this.props.id][selected[0]];
 
-      if(msgObj.binary) {
+      if(typeof msgObj.data === 'object') {
         message = hexy(msgObj.data);
-      } else if(typeof msgObj.data === 'object') {
-        for(let i = 0; i < msgObj.data.length; i++) {
-          message += String.fromCharCode(msgObj.data[i]);
-        }
       } else {
         message = msgObj.data;
       }
