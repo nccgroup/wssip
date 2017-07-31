@@ -17,10 +17,8 @@
     "compile": "NODE_ENV=production webpack --config webpack.config.prod.js",
     "compile:dev": "NODE_ENV=development webpack --config webpack.config.js",
     "compile:dev-watch": "NODE_ENV=development webpack --config webpack.config.js --watch",
-    "build": "build",
-    "build:mac": "build -m",
-    "build:win32": "build -w",
-    "build:linux": "build -l",
+    "build:appveyor": "build -w --ia32 --x64 --armv7l",
+    "build:travis": "build -l --ia32 --x64 --armv7l && build -m --ia32 --x64",
     "lint": "npm run lint:src && npm run lint:lib",
     "lint:src": "eslint src",
     "lint:lib": "eslint lib",
@@ -141,7 +139,7 @@
       ]
     },
     "mac": {
-      "artifactName": "${name}-${version}-macos-${arch}.${ext}",
+      "artifactName": "WSSiP-${version}-macos-${arch}.${ext}",
       "category": "public.app-category.utilities",
       "icon": "./build/icon.icns",
       "target": [

@@ -1,6 +1,6 @@
 environment:
   matrix:
-    - nodejs_version: 7
+    - nodejs_version: 8
 
 platform:
   - x86
@@ -23,7 +23,7 @@ install:
   - yarn install
 
 build_script:
-  - yarn run build
+  - yarn run build:appveyor
 
 test: off
 
