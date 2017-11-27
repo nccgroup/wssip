@@ -22,32 +22,13 @@ Written and maintained by Samantha Chalker (@[thekettu](https://github.com/theke
 
 See [Releases](https://github.com/nccgroup/wssip/releases).
 
-### From npm/yarn (for CLI commands)
+### From npx via npm (for CLI commands)
 
 Run the following in your command line:
 
-**npm**:
-
 ~~~bash
-# Install Electron globally
-npm i -g electron@1.7
-
-# Install wssip global for "wssip" command
-npm i -g wssip
-
-# Launch!
-wssip
+npx wssip
 ~~~
-
-**yarn**: (Make sure the directory in `yarn global bin` is in your `PATH`)
-
-~~~bash
-yarn global add electron@1.7
-yarn global add wssip
-wssip
-~~~
-
-You can also run `npm install electron` (or `yarn add electron`) inside the installed WSSiP directory if you do not want to install Electron globally, as the app packager requires Electron be added to developer dependencies.
 
 ### From Source
 
@@ -64,11 +45,17 @@ cd wssip
 # npm i
 
 # If not... (as to minimize disk space):
-npm i electron@1.7
+npm i electron
 npm i --production
+
+# Yarn version:
+# yarn add electron
+# yarn install --production
 
 # Start application:
 npm start
+# or yarn:
+# yarn start
 ~~~
 
 ## Usage
