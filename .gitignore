@@ -4,3 +4,4 @@ dist
 out
 node_modules
 *.log
+build/output
