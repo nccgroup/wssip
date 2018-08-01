@@ -311,7 +311,7 @@ export default class Main extends React.Component {
   handleToggleInterceptState(id, sender, checked) {
     let {heldForIntercepts} = this.state;
 
-    if(messageArr !== false && checked === false) {
+    if(heldForIntercepts[id][sender] !== false && checked === false) {
       heldForIntercepts[id][sender].forEach(individualMsg =>
         this.handleMessageSent(id, sender, individualMsg.type, individualMsg.data, individualMsg.binary, false, false));
     }
